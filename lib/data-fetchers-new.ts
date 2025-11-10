@@ -106,8 +106,8 @@ export async function fetchMarketData(
 // Helper function to compute mean of impact prices
 export function computeMeanImpactPrice(data: MarketMetrics[]): (number | null)[] {
   return data.map(d => {
-    if (d.impact_px_bid !== null && d.impact_px_ask !== null) {
-      return (d.impact_px_bid + d.impact_px_ask) / 2
+    if (d.impactpxs_bid !== null && d.impactpxs_ask !== null) {
+      return (d.impactpxs_bid + d.impactpxs_ask) / 2
     }
     return null
   })
@@ -117,9 +117,9 @@ export function computeMeanImpactPrice(data: MarketMetrics[]): (number | null)[]
 export function formatChartData(data: MarketMetrics[]) {
   return data.map(d => ({
     ...d,
-    timestamp: new Date(d.timestamp).getTime(),
-    meanImpactPrice: d.impact_px_bid !== null && d.impact_px_ask !== null 
-      ? (d.impact_px_bid + d.impact_px_ask) / 2 
+    timestamp: d.timestamp ? Number(d.timestamp) : null,
+    meanImpactPrice: d.impactpxs_bid !== null && d.impactpxs_ask !== null 
+      ? (d.impactpxs_bid + d.impactpxs_ask) / 2 
       : null
   }))
 }
