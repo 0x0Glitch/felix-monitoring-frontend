@@ -1,0 +1,447 @@
+"use client";
+
+import React, { useState, useMemo } from "react";
+import { formatUSD, formatNum, formatPct, timeAgo, formatTsFull } from "@/lib/utils";
+
+interface Position {
+  address: string;
+  market: string;
+  position_size: number | string;
+  entry_price: number | string;
+  liquidation_price: number | string | null;
+  margin_used: number | string;
+  position_value: number | string;
+  unrealized_pnl: number | string;
+  return_on_equity: number | string;
+  leverage_type: string;
+  leverage_value: number | string;
+  leverage_raw_usd: number | string;
+  account_value: number | string;
+  total_margin_used: number | string;
+  withdrawable: number | string;
+  last_updated: string;
+  created_at: string;
+}
+
+type SortField = "address" | "position_size" | "liquidation_price" | "unrealized_pnl" | "leverage_value";
+type SortOrder = "asc" | "desc";
+type PositionFilter = "all" | "long" | "short";
+
+interface PositionsTableProps {
+  positions: Position[];
+  isLoading?: boolean;
+}
+
+export default function PositionsTable({ positions, isLoading }: PositionsTableProps) {
+  const [sortField, setSortField] = useState<SortField>("position_size");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [positionFilter, setPositionFilter] = useState<PositionFilter>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+
+  const filteredPositions = useMemo(() => {
+    if (positionFilter === "all") return positions;
+    return positions.filter(p => {
+      const posSize = parseFloat(String(p.position_size));
+      return positionFilter === "long" ? posSize > 0 : posSize < 0;
+    });
+  }, [positions, positionFilter]);
+
+  const sortedPositions = useMemo(() => {
+    const sorted = [...filteredPositions].sort((a, b) => {
+      let aVal: string | number | null = a[sortField];
+      let bVal: string | number | null = b[sortField];
+
+      if (sortField !== "address") {
+        aVal = aVal !== null ? parseFloat(String(aVal)) : null;
+        bVal = bVal !== null ? parseFloat(String(bVal)) : null;
+      }
+
+      if (sortField === "liquidation_price") {
+        if (aVal === null) aVal = sortOrder === "asc" ? Infinity : -Infinity;
+        if (bVal === null) bVal = sortOrder === "asc" ? Infinity : -Infinity;
+      }
+
+      if (sortField === "position_size" && typeof aVal === "number" && typeof bVal === "number") {
+        aVal = Math.abs(aVal);
+        bVal = Math.abs(bVal);
+      }
+
+      if (aVal === null) aVal = 0;
+      if (bVal === null) bVal = 0;
+
+      if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [filteredPositions, sortField, sortOrder]);
+
+  const paginatedPositions = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return sortedPositions.slice(startIndex, endIndex);
+  }, [sortedPositions, currentPage, rowsPerPage]);
+
+  const totalPages = Math.ceil(sortedPositions.length / rowsPerPage);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [positionFilter, rowsPerPage]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("desc");
+    }
+  };
+
+  const toggleRowExpansion = (address: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(address)) {
+      newExpanded.delete(address);
+    } else {
+      newExpanded.add(address);
+    }
+    setExpandedRows(newExpanded);
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <span className="text-gray-400 ml-1">⇅</span>;
+    }
+    return (
+      <span className="ml-1">
+        {sortOrder === "desc" ? "↓" : "↑"}
+      </span>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+          <p className="text-gray-500 dark:text-gray-400">Loading positions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!positions || positions.length === 0) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+        <p className="text-gray-500 dark:text-gray-400 text-center">No positions found for this market.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          User Positions ({sortedPositions.length} {positionFilter !== "all" ? `${positionFilter}` : ""})
+        </h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPositionFilter("all")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              positionFilter === "all"
+                ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setPositionFilter("long")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              positionFilter === "long"
+                ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            Longs
+          </button>
+          <button
+            onClick={() => setPositionFilter("short")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+              positionFilter === "short"
+                ? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            Shorts
+          </button>
+        </div>
+      </div>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            <tr>
+              <th className="px-6 py-3 text-left">
+                <button
+                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  onClick={() => handleSort("address")}
+                >
+                  Address
+                  <SortIcon field="address" />
+                </button>
+              </th>
+              <th className="px-6 py-3 text-left">
+                <button
+                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  onClick={() => handleSort("position_size")}
+                >
+                  Position Size
+                  <SortIcon field="position_size" />
+                </button>
+              </th>
+              <th className="px-6 py-3 text-left">
+                <button
+                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  onClick={() => handleSort("liquidation_price")}
+                >
+                  Liquidation Price
+                  <SortIcon field="liquidation_price" />
+                </button>
+              </th>
+              <th className="px-6 py-3 text-left">
+                <button
+                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  onClick={() => handleSort("unrealized_pnl")}
+                >
+                  Unrealized PnL
+                  <SortIcon field="unrealized_pnl" />
+                </button>
+              </th>
+              <th className="px-6 py-3 text-left">
+                <button
+                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  onClick={() => handleSort("leverage_value")}
+                >
+                  Leverage
+                  <SortIcon field="leverage_value" />
+                </button>
+              </th>
+              <th className="px-6 py-3 text-left">
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                  Actions
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+            {paginatedPositions.map((position) => {
+              const isExpanded = expandedRows.has(position.address);
+              const posSize = parseFloat(String(position.position_size));
+              const pnl = parseFloat(String(position.unrealized_pnl));
+              const isLong = posSize > 0;
+              const pnlClass = pnl >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+              
+              return (
+                <React.Fragment key={position.address}>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {position.address.slice(0, 6)}...{position.address.slice(-4)}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {formatNum(Math.abs(posSize), 4)}
+                        </div>
+                        <div className={`text-xs ${isLong ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                          {isLong ? "LONG" : "SHORT"}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {position.liquidation_price ? formatUSD(parseFloat(String(position.liquidation_price))) : "—"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className={`text-sm font-medium ${pnlClass}`}>
+                        {formatUSD(pnl)}
+                      </div>
+                      {position.return_on_equity && (
+                        <div className={`text-xs ${pnlClass}`}>
+                          {parseFloat(String(position.return_on_equity)) >= 0 ? "+" : ""}{formatPct(position.return_on_equity, 2)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {parseFloat(String(position.leverage_value))}x
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {position.leverage_type}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button
+                        onClick={() => toggleRowExpansion(position.address)}
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                      >
+                        {isExpanded ? "Hide" : "Details"}
+                      </button>
+                    </td>
+                  </tr>
+                  {isExpanded && (
+                    <tr className="bg-gray-50 dark:bg-gray-700">
+                      <td colSpan={6} className="px-6 py-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Entry Price</div>
+                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.entry_price)))}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Position Value</div>
+                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.position_value)))}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Margin Used</div>
+                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.margin_used)))}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Account Value</div>
+                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.account_value)))}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Total Margin</div>
+                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.total_margin_used)))}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Withdrawable</div>
+                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.withdrawable)))}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Opened</div>
+                            <div className="font-medium text-gray-900 dark:text-white" title={formatTsFull(position.created_at)}>
+                              {timeAgo(position.created_at)}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Last Updated</div>
+                            <div className="font-medium text-gray-900 dark:text-white" title={formatTsFull(position.last_updated)}>
+                              {timeAgo(position.last_updated)}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600 dark:text-gray-400">Rows per page:</label>
+          <select
+            value={rowsPerPage}
+            onChange={(e) => setRowsPerPage(Number(e.target.value))}
+            className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, sortedPositions.length)} of {sortedPositions.length}
+          </span>
+        </div>
+        
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+            className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+              currentPage === 1
+                ? "text-gray-400 bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+            }`}
+          >
+            First
+          </button>
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+              currentPage === 1
+                ? "text-gray-400 bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+            }`}
+          >
+            Previous
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = currentPage <= 3 
+                ? i + 1 
+                : currentPage >= totalPages - 2 
+                  ? totalPages - 4 + i 
+                  : currentPage - 2 + i;
+              
+              if (pageNum < 1 || pageNum > totalPages) return null;
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                    currentPage === pageNum
+                      ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            }).filter(Boolean)}
+          </div>
+          
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+              currentPage === totalPages
+                ? "text-gray-400 bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+            }`}
+          >
+            Next
+          </button>
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+            className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+              currentPage === totalPages
+                ? "text-gray-400 bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+            }`}
+          >
+            Last
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
