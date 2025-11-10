@@ -92,13 +92,13 @@ export async function GET(request: NextRequest) {
       query = `
         WITH time_buckets AS (
           SELECT 
-            DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
-              (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute' as timestamp,
+            EXTRACT(EPOCH FROM (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
+              (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute')) * 1000 as timestamp,
             AVG(markpx::numeric) as mark_price,
             AVG(oraclepx::numeric) as oracle_price,
             AVG(midpx::numeric) as mid_price,
             AVG(funding::numeric) as funding_rate_pct,
-            AVG(openinterest::numeric) as open_interest,
+            AVG(markpx::numeric * openinterest::numeric) as open_interest,
             AVG(bid_depth_5bps::numeric) as bid_depth_5bps,
             AVG(ask_depth_5bps::numeric) as ask_depth_5bps,
             AVG(bid_depth_10bps::numeric) as bid_depth_10bps,
@@ -130,8 +130,8 @@ export async function GET(request: NextRequest) {
             MIN(coin) as coin
           FROM market_data.flxn_tsla_data
           WHERE coin = $1
-          GROUP BY DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
-                   (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute'
+          GROUP BY (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
+                   (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute')
         )
         SELECT * FROM time_buckets
         ORDER BY timestamp ASC
@@ -143,13 +143,13 @@ export async function GET(request: NextRequest) {
       query = `
         WITH time_buckets AS (
           SELECT 
-            DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
-              (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 2) * 2) * INTERVAL '1 minute' as timestamp,
+            EXTRACT(EPOCH FROM (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
+              (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 2) * 2) * INTERVAL '1 minute')) * 1000 as timestamp,
             AVG(markpx::numeric) as mark_price,
             AVG(oraclepx::numeric) as oracle_price,
             AVG(midpx::numeric) as mid_price,
             AVG(funding::numeric) as funding_rate_pct,
-            AVG(openinterest::numeric) as open_interest,
+            AVG(markpx::numeric * openinterest::numeric) as open_interest,
             AVG(bid_depth_5bps::numeric) as bid_depth_5bps,
             AVG(ask_depth_5bps::numeric) as ask_depth_5bps,
             AVG(bid_depth_10bps::numeric) as bid_depth_10bps,
@@ -182,8 +182,8 @@ export async function GET(request: NextRequest) {
           FROM market_data.flxn_tsla_data
           WHERE TO_TIMESTAMP(timestamp / 1000) >= NOW() - INTERVAL '24 hours'
             AND coin = $1
-          GROUP BY DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
-                   (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 2) * 2) * INTERVAL '1 minute'
+          GROUP BY (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
+                   (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 2) * 2) * INTERVAL '1 minute')
         )
         SELECT * FROM time_buckets
         ORDER BY timestamp ASC
@@ -194,10 +194,10 @@ export async function GET(request: NextRequest) {
       // For 1-hour view, get raw data (should be manageable)
       query = `
         SELECT 
-          id, TO_TIMESTAMP(timestamp / 1000) as timestamp, coin,
+          id, timestamp, coin,
           markpx as mark_price, oraclepx as oracle_price, midpx as mid_price,
           best_bid, best_ask, spread, spread as spread_pct,
-          funding as funding_rate_pct, openinterest as open_interest, dayntlvlm as volume_24h,
+          funding as funding_rate_pct, (markpx::numeric * openinterest::numeric) as open_interest, dayntlvlm as volume_24h,
           bid_depth_5bps, ask_depth_5bps, (bid_depth_5bps + ask_depth_5bps) as total_depth_5bps,
           bid_depth_10bps, ask_depth_10bps, (bid_depth_10bps + ask_depth_10bps) as total_depth_10bps,
           bid_depth_50bps, ask_depth_50bps, (bid_depth_50bps + ask_depth_50bps) as total_depth_50bps,
@@ -266,21 +266,36 @@ export async function GET(request: NextRequest) {
     
     // Log timestamp range for debugging
     if (processedData.length > 0) {
-      const timestamps = processedData.map((d: any) => d.timestamp).sort()
-      const first = new Date(timestamps[0])
-      const last = new Date(timestamps[timestamps.length - 1])
-      const now = new Date()
-      const hoursDiff = (now.getTime() - first.getTime()) / (1000 * 60 * 60)
-      const totalHours = (last.getTime() - first.getTime()) / (1000 * 60 * 60)
-      
       console.log(`[${timeWindow}] Returning ${processedData.length} records`)
-      console.log(`[${timeWindow}] Time range: ${first.toISOString()} to ${last.toISOString()}`)
-      console.log(`[${timeWindow}] Data spans ${totalHours.toFixed(1)} hours`)
-      console.log(`[${timeWindow}] Oldest data is ${hoursDiff.toFixed(1)} hours ago from now`)
       
-      // Warning if 1d is returning less than expected
-      if (timeWindow === '1d' && hoursDiff < 20) {
-        console.warn(`[WARNING] 1d query only returned ${hoursDiff.toFixed(1)} hours of data, expected ~24 hours`)
+      // Safely handle timestamp logging
+      try {
+        const timestamps = processedData
+          .map((d: any) => d.timestamp)
+          .filter((t: any) => t != null && !isNaN(t))
+          .sort()
+        
+        if (timestamps.length > 0) {
+          const first = new Date(Number(timestamps[0]))
+          const last = new Date(Number(timestamps[timestamps.length - 1]))
+          
+          if (!isNaN(first.getTime()) && !isNaN(last.getTime())) {
+            const now = new Date()
+            const hoursDiff = (now.getTime() - first.getTime()) / (1000 * 60 * 60)
+            const totalHours = (last.getTime() - first.getTime()) / (1000 * 60 * 60)
+            
+            console.log(`[${timeWindow}] Time range: ${first.toISOString()} to ${last.toISOString()}`)
+            console.log(`[${timeWindow}] Data spans ${totalHours.toFixed(1)} hours`)
+            console.log(`[${timeWindow}] Oldest data is ${hoursDiff.toFixed(1)} hours ago from now`)
+            
+            // Warning if 1d is returning less than expected
+            if (timeWindow === '1d' && hoursDiff < 20) {
+              console.warn(`[WARNING] 1d query only returned ${hoursDiff.toFixed(1)} hours of data, expected ~24 hours`)
+            }
+          }
+        }
+      } catch (err) {
+        console.log(`[${timeWindow}] Could not parse timestamps for debugging`)
       }
     } else {
       console.log(`[${timeWindow}] Returning 0 records`)

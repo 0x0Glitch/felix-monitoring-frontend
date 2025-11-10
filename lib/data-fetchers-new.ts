@@ -104,22 +104,22 @@ export async function fetchMarketData(
 }
 
 // Helper function to compute mean of impact prices
-export function computeMeanImpactPrice(data: MarketMetrics[]): (number | null)[] {
+export function computeMeanImpactPrice(data: any[]): (number | null)[] {
   return data.map(d => {
-    if (d.impactpxs_bid !== null && d.impactpxs_ask !== null) {
-      return (d.impactpxs_bid + d.impactpxs_ask) / 2
+    if (d.impact_px_bid !== null && d.impact_px_ask !== null) {
+      return (d.impact_px_bid + d.impact_px_ask) / 2
     }
     return null
   })
 }
 
 // Helper function to format data for charts
-export function formatChartData(data: MarketMetrics[]) {
+export function formatChartData(data: any[]) {
   return data.map(d => ({
     ...d,
     timestamp: d.timestamp ? Number(d.timestamp) : null,
-    meanImpactPrice: d.impactpxs_bid !== null && d.impactpxs_ask !== null 
-      ? (d.impactpxs_bid + d.impactpxs_ask) / 2 
+    meanImpactPrice: d.impact_px_bid !== null && d.impact_px_ask !== null 
+      ? (d.impact_px_bid + d.impact_px_ask) / 2 
       : null
   }))
 }

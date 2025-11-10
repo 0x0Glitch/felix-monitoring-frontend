@@ -17,45 +17,45 @@ export async function GET() {
   // Test 1: Try public schema with full table name
   try {
     const { data, error } = await supabase
-      .from('xyz_xyz100_metrics_raw')
+      .from('flxn_tsla_data')
       .select('*')
       .limit(1)
     
     tests.push({
-      test: 'Public schema - xyz_xyz100_metrics_raw',
+      test: 'Public schema - flxn_tsla_data',
       success: !error,
       data: data?.length || 0,
       error: error?.message
     })
   } catch (e: any) {
     tests.push({
-      test: 'Public schema - xyz_xyz100_metrics_raw',
+      test: 'Public schema - flxn_tsla_data',
       success: false,
       error: e.message
     })
   }
   
-  // Test 2: Try with market_metrics schema
+  // Test 2: Try with market_data schema
   try {
     const supabaseWithSchema = createClient(supabaseUrl, supabaseKey, {
-      db: { schema: 'market_metrics' },
+      db: { schema: 'market_data' },
       auth: { persistSession: false }
     })
     
     const { data, error } = await supabaseWithSchema
-      .from('xyz_xyz100_metrics_raw')
+      .from('flxn_tsla_data')
       .select('*')
       .limit(1)
     
     tests.push({
-      test: 'market_metrics schema - xyz_xyz100_metrics_raw',
+      test: 'market_data schema - flxn_tsla_data',
       success: !error,
       data: data?.length || 0,
       error: error?.message
     })
   } catch (e: any) {
     tests.push({
-      test: 'market_metrics schema - xyz_xyz100_metrics_raw',
+      test: 'market_data schema - flxn_tsla_data',
       success: false,
       error: e.message
     })
@@ -64,19 +64,19 @@ export async function GET() {
   // Test 3: Try with qualified name
   try {
     const { data, error } = await supabase
-      .from('market_metrics.xyz_xyz100_metrics_raw')
+      .from('market_data.flxn_tsla_data')
       .select('*')
       .limit(1)
     
     tests.push({
-      test: 'Qualified name - market_metrics.xyz_xyz100_metrics_raw',
+      test: 'Qualified name - market_data.flxn_tsla_data',
       success: !error,
       data: data?.length || 0,
       error: error?.message
     })
   } catch (e: any) {
     tests.push({
-      test: 'Qualified name - market_metrics.xyz_xyz100_metrics_raw',
+      test: 'Qualified name - market_data.flxn_tsla_data',
       success: false,
       error: e.message
     })

@@ -25,32 +25,35 @@ export async function GET() {
         name: 'last_1_hour',
         query: `
           SELECT COUNT(*) as count, 
-                 MIN(timestamp) as oldest, 
-                 MAX(timestamp) as newest,
-                 (EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 3600)::numeric(10,2) as hours_span
-          FROM market_metrics.xyz_xyz100_metrics_raw
-          WHERE timestamp >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '1 hour'
+                 MIN(TO_TIMESTAMP(timestamp / 1000)) as oldest, 
+                 MAX(TO_TIMESTAMP(timestamp / 1000)) as newest,
+                 ((MAX(timestamp) - MIN(timestamp)) / 1000 / 3600)::numeric(10,2) as hours_span
+          FROM market_data.flxn_tsla_data
+          WHERE TO_TIMESTAMP(timestamp / 1000) >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '1 hour'
+            AND coin = 'flxn:TSLA'
         `
       },
       {
         name: 'last_24_hours',
         query: `
           SELECT COUNT(*) as count, 
-                 MIN(timestamp) as oldest, 
-                 MAX(timestamp) as newest,
-                 (EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 3600)::numeric(10,2) as hours_span
-          FROM market_metrics.xyz_xyz100_metrics_raw
-          WHERE timestamp >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'
+                 MIN(TO_TIMESTAMP(timestamp / 1000)) as oldest, 
+                 MAX(TO_TIMESTAMP(timestamp / 1000)) as newest,
+                 ((MAX(timestamp) - MIN(timestamp)) / 1000 / 3600)::numeric(10,2) as hours_span
+          FROM market_data.flxn_tsla_data
+          WHERE TO_TIMESTAMP(timestamp / 1000) >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'
+            AND coin = 'flxn:TSLA'
         `
       },
       {
         name: 'all_data',
         query: `
           SELECT COUNT(*) as count, 
-                 MIN(timestamp) as oldest, 
-                 MAX(timestamp) as newest,
-                 (EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp))) / 3600)::numeric(10,2) as hours_span
-          FROM market_metrics.xyz_xyz100_metrics_raw
+                 MIN(TO_TIMESTAMP(timestamp / 1000)) as oldest, 
+                 MAX(TO_TIMESTAMP(timestamp / 1000)) as newest,
+                 ((MAX(timestamp) - MIN(timestamp)) / 1000 / 3600)::numeric(10,2) as hours_span
+          FROM market_data.flxn_tsla_data
+          WHERE coin = 'flxn:TSLA'
         `
       },
       {
