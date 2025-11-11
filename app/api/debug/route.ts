@@ -15,6 +15,11 @@ function createClient() {
 export async function GET() {
   let client: Client | null = null
   
+  // Get table name from environment
+  const schema = process.env.NEXT_PUBLIC_MARKET_SCHEMA || 'market_data'
+  const table = process.env.NEXT_PUBLIC_MARKET_TABLE || 'flxn_tsla_data'
+  const fullTableName = `${schema}.${table}`
+  
   try {
     client = createClient()
     await client.connect()
@@ -28,9 +33,8 @@ export async function GET() {
                  MIN(TO_TIMESTAMP(timestamp / 1000)) as oldest, 
                  MAX(TO_TIMESTAMP(timestamp / 1000)) as newest,
                  ((MAX(timestamp) - MIN(timestamp)) / 1000 / 3600)::numeric(10,2) as hours_span
-          FROM market_data.flxn_tsla_data
+          FROM ${fullTableName}
           WHERE TO_TIMESTAMP(timestamp / 1000) >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '1 hour'
-            AND coin = 'flxn:TSLA'
         `
       },
       {
@@ -40,9 +44,8 @@ export async function GET() {
                  MIN(TO_TIMESTAMP(timestamp / 1000)) as oldest, 
                  MAX(TO_TIMESTAMP(timestamp / 1000)) as newest,
                  ((MAX(timestamp) - MIN(timestamp)) / 1000 / 3600)::numeric(10,2) as hours_span
-          FROM market_data.flxn_tsla_data
+          FROM ${fullTableName}
           WHERE TO_TIMESTAMP(timestamp / 1000) >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '1 day'
-            AND coin = 'flxn:TSLA'
         `
       },
       {
@@ -52,8 +55,8 @@ export async function GET() {
                  MIN(TO_TIMESTAMP(timestamp / 1000)) as oldest, 
                  MAX(TO_TIMESTAMP(timestamp / 1000)) as newest,
                  ((MAX(timestamp) - MIN(timestamp)) / 1000 / 3600)::numeric(10,2) as hours_span
-          FROM market_data.flxn_tsla_data
-          WHERE coin = 'flxn:TSLA'
+          FROM ${fullTableName}
+          -- All records (no filter)
         `
       },
       {

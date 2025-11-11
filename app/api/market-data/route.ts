@@ -8,8 +8,8 @@ function createClient() {
     ssl: {
       rejectUnauthorized: false
     },
-    connectionTimeoutMillis: 10000, // 10 seconds for connection establishment
-    statement_timeout: 60000, // 60 seconds for queries
+    connectionTimeoutMillis: 10000, // 10 seconds
+    statement_timeout: 60000, // 60 seconds
     query_timeout: 60000, // 60 seconds
   })
 }
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
   }
   
-  const limit = parseInt(searchParams.get('limit') || '10000') // Default limit
+  const limit = parseInt(searchParams.get('limit') || '5000') // Default limit
   const offset = parseInt(searchParams.get('offset') || '0')
   
   let client: Client | null = null
@@ -78,6 +78,10 @@ export async function GET(request: NextRequest) {
   }
   
   try {
+    // Get table name from environment
+    const schema = process.env.NEXT_PUBLIC_MARKET_SCHEMA || 'market_data'
+    const table = process.env.NEXT_PUBLIC_MARKET_TABLE || 'flxn_tsla_data'
+    const fullTableName = `${schema}.${table}`
     
     // For "all" time window, we'll sample the data to avoid too much data
     const isAllTime = timeWindow === 'all'
@@ -128,7 +132,7 @@ export async function GET(request: NextRequest) {
             null as total_depth_10pct,
             AVG(premium::numeric) as premium,
             MIN(coin) as coin
-          FROM market_data.flxn_tsla_data
+          FROM ${fullTableName}
           WHERE coin = $1
           GROUP BY (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
                    (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute')
@@ -179,7 +183,7 @@ export async function GET(request: NextRequest) {
             null as total_depth_10pct,
             AVG(premium::numeric) as premium,
             MIN(coin) as coin
-          FROM market_data.flxn_tsla_data
+          FROM ${fullTableName}
           WHERE TO_TIMESTAMP(timestamp / 1000) >= NOW() - INTERVAL '24 hours'
             AND coin = $1
           GROUP BY (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
@@ -206,7 +210,7 @@ export async function GET(request: NextRequest) {
           null as bid_depth_10pct, null as ask_depth_10pct, null as total_depth_10pct,
           null as bid_depth_25pct, null as ask_depth_25pct, null as total_depth_25pct,
           impactpxs_bid as impact_px_bid, impactpxs_ask as impact_px_ask, premium
-        FROM market_data.flxn_tsla_data
+        FROM ${fullTableName}
         WHERE TO_TIMESTAMP(timestamp / 1000) >= NOW() - INTERVAL '1 hour'
           AND coin = $1
       `

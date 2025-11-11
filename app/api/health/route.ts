@@ -16,6 +16,11 @@ function createClient() {
 export async function GET() {
   let client: Client | null = null
   
+  // Get table name from environment
+  const schema = process.env.NEXT_PUBLIC_MARKET_SCHEMA || 'market_data'
+  const table = process.env.NEXT_PUBLIC_MARKET_TABLE || 'flxn_tsla_data'
+  const fullTableName = `${schema}.${table}`
+  
   try {
     // Test database connection
     client = createClient()
@@ -24,9 +29,9 @@ export async function GET() {
     // Run a simple query to verify connectivity
     const result = await client.query(`
       SELECT COUNT(*) as count 
-      FROM market_data.flxn_tsla_data 
+      FROM ${fullTableName} 
       WHERE TO_TIMESTAMP(timestamp / 1000) > NOW() - INTERVAL '1 minute'
-        AND coin = 'flxn:TSLA'
+        -- No coin filter - checks any recent data
     `)
     
     return NextResponse.json({

@@ -21,6 +21,10 @@ export async function GET(
   const market = marketParam.toLowerCase().startsWith('flxn:') 
     ? 'flxn:' + marketParam.split(':')[1] 
     : marketParam;
+    
+  // Get schema and table from environment
+  const userPositionsSchema = process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || 'user_positions';
+  const userPositionsTable = process.env.NEXT_PUBLIC_USER_POSITIONS_TABLE || 'flxn_tsla_positions';
 
   console.log(`[Positions API] Fetching positions for market: ${market}`);
 
@@ -28,22 +32,21 @@ export async function GET(
   
   try {
     await client.connect();
-    // Convert market name like "FLXN:TSLA" to "flxn_tsla_positions"
-    const tableMarket = market.toLowerCase().replace(':', '_');
-    const tableName = `user_positions.${tableMarket}_positions`;
-    const tableNameOnly = `${tableMarket}_positions`;
+    // Use configured table name
+    const tableName = `${userPositionsSchema}.${userPositionsTable}`;
+    const tableNameOnly = userPositionsTable;
     
     const tableExistsResult = await client.query(
       `SELECT EXISTS (
         SELECT FROM information_schema.tables 
-        WHERE table_schema = 'user_positions' 
-        AND table_name = $1
+        WHERE table_schema = $1 
+        AND table_name = $2
       )`,
-      [tableNameOnly]
+      [userPositionsSchema, tableNameOnly]
     );
     
     if (!tableExistsResult.rows[0].exists) {
-      console.log(`[Positions API] Table ${tableNameOnly} does not exist in user_positions schema`);
+      console.log(`[Positions API] Table ${tableNameOnly} does not exist in ${userPositionsSchema} schema`);
       return NextResponse.json({
         positions: [],
         count: 0,
