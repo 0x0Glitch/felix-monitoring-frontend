@@ -1,12 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { MARKET_CONFIG } from './config'
 
-// Supabase configuration
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://thjyshlwqvhopflremyl.supabase.co'
-const supabaseServiceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || ''
+// Supabase configuration - all values from environment variables, no hardcoded defaults
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
 
 // PostgreSQL connection string for reference
-const connectionString = process.env.NEXT_PUBLIC_DATABASE_URL || ''
+const connectionString = process.env.NEXT_PUBLIC_DATABASE_URL!
 
 // Export schema and table names from config
 export const SCHEMA_NAME = MARKET_CONFIG.marketSchema
@@ -29,7 +29,7 @@ export const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
     }
   },
   db: {
-    schema: 'public' // Explicitly use public schema
+    schema: SCHEMA_NAME // Use configured schema from environment
   }
 })
 

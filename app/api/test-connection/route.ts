@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { MARKET_CONFIG } from '@/lib/config'
 
 export async function GET() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || ''
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
   const marketTable = MARKET_CONFIG.marketTable
   const marketSchema = MARKET_CONFIG.marketSchema
   
