@@ -1,4 +1,5 @@
 import MarketSelector from '@/components/MarketSelector'
+import { MARKET_CONFIG } from '@/lib/config'
 
 export default function Home() {
   return (
@@ -9,7 +10,7 @@ export default function Home() {
             Market Metrics Dashboard
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Monitoring FLXN:TSLA market
+            Monitoring {MARKET_CONFIG.defaultMarket} market
           </p>
         </div>
 

@@ -3,7 +3,8 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 
-const MARKET = "FLXN:TSLA";
+// Client components need to use environment variables directly for build-time replacement
+const MARKET = process.env.NEXT_PUBLIC_DEFAULT_MARKET!;
 
 export default function MarketSelector() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function MarketSelector() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">FLXN:TSLA Market</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{MARKET} Market</h2>
       
       <div className="space-y-4">
         <div className="flex gap-3">

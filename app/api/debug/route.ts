@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { Client } from 'pg'
+import { MARKET_CONFIG } from '@/lib/config'
 
 // Function to create a new client for each request (better for serverless)
 function createClient() {
@@ -15,9 +16,9 @@ function createClient() {
 export async function GET() {
   let client: Client | null = null
   
-  // Get table name from environment
-  const schema = process.env.NEXT_PUBLIC_MARKET_SCHEMA || 'market_data'
-  const table = process.env.NEXT_PUBLIC_MARKET_TABLE || 'flxn_tsla_data'
+  // Get table name from configuration
+  const schema = MARKET_CONFIG.marketSchema
+  const table = MARKET_CONFIG.marketTable
   const fullTableName = `${schema}.${table}`
   
   try {

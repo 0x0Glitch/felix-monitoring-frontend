@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { MARKET_CONFIG } from '@/lib/config'
 
 export async function GET() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || ''
-  const marketTable = process.env.NEXT_PUBLIC_MARKET_TABLE || 'flxn_tsla_data'
-  const marketSchema = process.env.NEXT_PUBLIC_MARKET_SCHEMA || 'market_data'
+  const marketTable = MARKET_CONFIG.marketTable
+  const marketSchema = MARKET_CONFIG.marketSchema
   
   // Create a fresh client
   const supabase = createClient(supabaseUrl, supabaseKey, {

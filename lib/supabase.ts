@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { MARKET_CONFIG } from './config'
 
 // Supabase configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://thjyshlwqvhopflremyl.supabase.co'
@@ -7,11 +8,11 @@ const supabaseServiceRoleKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
 // PostgreSQL connection string for reference
 const connectionString = process.env.NEXT_PUBLIC_DATABASE_URL || ''
 
-// Define schema from environment or use defaults
-export const SCHEMA_NAME = process.env.NEXT_PUBLIC_MARKET_SCHEMA || 'market_data'
-export const TABLE_NAME = process.env.NEXT_PUBLIC_MARKET_TABLE || 'flxn_tsla_data'
-export const USER_POSITIONS_SCHEMA = process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || 'user_positions'
-export const USER_POSITIONS_TABLE = process.env.NEXT_PUBLIC_USER_POSITIONS_TABLE || 'flxn_tsla_positions'
+// Export schema and table names from config
+export const SCHEMA_NAME = MARKET_CONFIG.marketSchema
+export const TABLE_NAME = MARKET_CONFIG.marketTable
+export const USER_POSITIONS_SCHEMA = MARKET_CONFIG.userPositionsSchema
+export const USER_POSITIONS_TABLE = MARKET_CONFIG.userPositionsTable
 
 // Create Supabase client with service role key (bypasses RLS)
 export const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {

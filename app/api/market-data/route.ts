@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Client } from 'pg'
+import { MARKET_CONFIG } from '@/lib/config'
 
 // Function to create a new client for each request (better for serverless)
 function createClient() {
@@ -19,19 +20,18 @@ export async function GET(request: NextRequest) {
   const timeWindow = searchParams.get('timeWindow') || 'all'
   let coin = searchParams.get('coin')
   
-  // Default to flxn:TSLA if no coin specified
+  // Default to configured market if no coin specified
   if (!coin) {
-    coin = 'flxn:TSLA'
+    coin = MARKET_CONFIG.defaultMarket
+  }
+  
+  // Normalize coin format: lowercase dex prefix, uppercase market symbol
+  if (coin.includes(':')) {
+    const parts = coin.split(':')
+    coin = parts[0].toLowerCase() + ':' + (parts[1] || '').toUpperCase()
   } else {
-    // Handle coin format: keep prefix lowercase, but market uppercase for consistency
-    if (coin.toLowerCase().startsWith('flxn:')) {
-      // For FLXN markets, keep the format as 'flxn:TSLA' (lowercase prefix, uppercase symbol)
-      const parts = coin.split(':')
-      coin = parts[0].toLowerCase() + ':' + (parts[1] || '').toUpperCase()
-    } else {
-      // For other markets, convert to lowercase
-      coin = coin.toLowerCase()
-    }
+    // For non-DEX markets, keep original case
+    coin = coin.toUpperCase()
   }
   
   const limit = parseInt(searchParams.get('limit') || '5000') // Default limit
@@ -78,9 +78,9 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    // Get table name from environment
-    const schema = process.env.NEXT_PUBLIC_MARKET_SCHEMA || 'market_data'
-    const table = process.env.NEXT_PUBLIC_MARKET_TABLE || 'flxn_tsla_data'
+    // Get table name from configuration
+    const schema = MARKET_CONFIG.marketSchema
+    const table = MARKET_CONFIG.marketTable
     const fullTableName = `${schema}.${table}`
     
     // For "all" time window, we'll sample the data to avoid too much data

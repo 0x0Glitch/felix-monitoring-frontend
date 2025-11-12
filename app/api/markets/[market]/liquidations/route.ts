@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "pg";
-import { SCHEMA_NAME, TABLE_NAME } from "@/lib/supabase";
+import { MARKET_CONFIG } from "@/lib/config";
 
 function createClient() {
   return new Client({
@@ -25,15 +25,19 @@ export async function GET(
   context: { params: Promise<{ market: string }> }
 ) {
   const params = await context.params;
-  const marketParam = params.market.toUpperCase();
-  // Convert to match database format: flxn:TSLA (lowercase dex, uppercase symbol)
-  const market = marketParam.toLowerCase().startsWith('flxn:') 
-    ? 'flxn:' + marketParam.split(':')[1] 
-    : marketParam;
+  let market = decodeURIComponent(params.market);
+  
+  // Normalize market format: lowercase dex prefix, uppercase market symbol
+  if (market.includes(':')) {
+    const parts = market.split(':');
+    market = parts[0].toLowerCase() + ':' + (parts[1] || '').toUpperCase();
+  } else {
+    market = market.toUpperCase();
+  }
     
-  // Get schema and table from environment
-  const userPositionsSchema = process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || 'user_positions';
-  const userPositionsTable = process.env.NEXT_PUBLIC_USER_POSITIONS_TABLE || 'flxn_tsla_positions';
+  // Get schema and table from configuration
+  const userPositionsSchema = MARKET_CONFIG.userPositionsSchema;
+  const userPositionsTable = MARKET_CONFIG.userPositionsTable;
 
   console.log(`[Liquidations API] Fetching data for market: ${market}`);
 
@@ -41,16 +45,14 @@ export async function GET(
   
   try {
     await client.connect();
-    // Market is already in correct format from above conversion
-    const marketForQuery = market;
     
     const priceResult = await client.query(
       `SELECT markpx::numeric as mark_price 
-       FROM ${SCHEMA_NAME}.${TABLE_NAME}
+       FROM ${MARKET_CONFIG.marketSchema}.${MARKET_CONFIG.marketTable}
        WHERE coin = $1 
        ORDER BY timestamp DESC 
        LIMIT 1`,
-      [marketForQuery]
+      [market]
     );
     
     if (!priceResult.rows.length) {
