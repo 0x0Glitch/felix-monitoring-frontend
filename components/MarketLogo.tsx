@@ -29,21 +29,25 @@ export default function MarketLogo({ logo, symbol, color, size = 'md' }: MarketL
 
   const pixelSize = sizeMap[size];
 
-  // Use actual logo images if available (try PNG first for Tesla/NVIDIA, then SVG)
+  // Use actual logo images if available
   if (logo && ['tesla', 'nvidia', 'xyz'].includes(logo)) {
+    // Use PNG for Tesla/NVIDIA, SVG for xyz
+    const logoSrc = logo === 'xyz' ? `/logos/${logo}.svg` : `/logos/${logo}.png`;
+    const fallbackSrc = logo === 'xyz' ? `/logos/${logo}.png` : `/logos/${logo}.svg`;
+    
     return (
       <div className={`${sizeClasses[size]} flex items-center justify-center relative`}>
         <Image
-          src={`/logos/${logo}.png`}
+          src={logoSrc}
           alt={`${symbol} logo`}
           width={pixelSize}
           height={pixelSize}
           className="object-contain"
           priority
           onError={(e) => {
-            // Try SVG fallback
+            // Try fallback format
             const target = e.target as HTMLImageElement;
-            target.src = `/logos/${logo}.svg`;
+            target.src = fallbackSrc;
             target.onerror = () => {
               // Final fallback: hide image, text will show
               target.style.display = 'none';

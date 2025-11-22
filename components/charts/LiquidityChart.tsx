@@ -9,8 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  Brush
+  ResponsiveContainer
 } from 'recharts'
 import { formatNumber, formatTimestamp } from '@/lib/utils'
 import { ChevronDown } from 'lucide-react'
@@ -69,8 +68,8 @@ export function LiquidityChart({ data, side }: LiquidityChartProps) {
 
   // Color schemes
   const colors = {
-    bid: ['#10b981', '#059669', '#047857', '#065f46'], // Green shades
-    ask: ['#ef4444', '#dc2626', '#b91c1c', '#991b1b']  // Red shades
+    bid: ['#10b981', '#14b8a6', '#06b6d4', '#0ea5e9'], // Vibrant blues/greens for bid
+    ask: ['#f97316', '#ef4444', '#dc2626', '#e11d48']  // Vibrant oranges/reds for ask
   }
 
   // Data keys based on metric type
@@ -145,22 +144,26 @@ export function LiquidityChart({ data, side }: LiquidityChartProps) {
           )}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={350}>
         <LineChart
           data={filteredData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="0" stroke="#1a1a1a" vertical={false} />
           <XAxis
             dataKey="timestamp"
             tickFormatter={formatTimestamp}
-            stroke="#6b7280"
-            style={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            style={{ fontSize: 11 }}
+            axisLine={{ stroke: '#1a1a1a' }}
+            tickLine={false}
           />
           <YAxis
             tickFormatter={formatNumber}
-            stroke="#6b7280"
-            style={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            style={{ fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -169,7 +172,7 @@ export function LiquidityChart({ data, side }: LiquidityChartProps) {
             type="monotone"
             dataKey={key1}
             stroke={colors[side][0]}
-            strokeWidth={2}
+            strokeWidth={2.5}
             dot={false}
             name={`Liquidity @ ${labels[0]}`}
             animationDuration={500}
@@ -178,7 +181,7 @@ export function LiquidityChart({ data, side }: LiquidityChartProps) {
             type="monotone"
             dataKey={key2}
             stroke={colors[side][1]}
-            strokeWidth={2}
+            strokeWidth={2.5}
             dot={false}
             name={`Liquidity @ ${labels[1]}`}
             animationDuration={500}
@@ -187,7 +190,7 @@ export function LiquidityChart({ data, side }: LiquidityChartProps) {
             type="monotone"
             dataKey={key3}
             stroke={colors[side][2]}
-            strokeWidth={2}
+            strokeWidth={2.5}
             dot={false}
             name={`Liquidity @ ${labels[2]}`}
             animationDuration={500}
@@ -197,19 +200,13 @@ export function LiquidityChart({ data, side }: LiquidityChartProps) {
               type="monotone"
               dataKey={key4}
               stroke={colors[side][3]}
-              strokeWidth={2}
+              strokeWidth={2.5}
               dot={false}
               name={`Liquidity @ ${labels[3]}`}
               animationDuration={500}
             />
           )}
           
-          <Brush
-            dataKey="timestamp"
-            height={30}
-            stroke="#8884d8"
-            tickFormatter={formatTimestamp}
-          />
         </LineChart>
       </ResponsiveContainer>
     </div>

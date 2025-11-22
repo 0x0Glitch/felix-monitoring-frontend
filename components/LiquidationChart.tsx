@@ -34,7 +34,7 @@ interface LiquidationChartProps {
 export default function LiquidationChart({ data, isLoading }: LiquidationChartProps) {
   if (isLoading) {
     return (
-      <div className="bg-[#141414] border border-gray-800 p-8">
+      <div className="bg-[#0a0a0a] border border-gray-900 p-8">
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="animate-spin h-10 w-10 border-b-2 border-emerald-400"></div>
           <p className="text-gray-400">Loading liquidation data...</p>
@@ -45,7 +45,7 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
 
   if (!data || !data.points || data.points.length === 0) {
     return (
-      <div className="bg-[#141414] border border-gray-800 p-8">
+      <div className="bg-[#0a0a0a] border border-gray-900 p-8">
         <p className="text-gray-400 text-center">No liquidation data available.</p>
       </div>
     );
@@ -113,15 +113,15 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
   const maxValue = Math.max(maxLong, maxShort, maxCumulativeLongs, maxCumulativeShorts) * 1.1;
 
   return (
-    <div className="bg-[#141414] border border-gray-800 p-6">
+    <div className="bg-[#0a0a0a] border border-gray-900 p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-white">Liquidation Chart</h3>
+        <h3 className="text-lg font-semibold text-white font-mono-data">Liquidation Chart</h3>
         <p className="font-mono-data text-sm text-gray-400 mt-1">
           Token amounts liquidatable at different price points. Current price: {formatUSD(data.currentPrice)}
         </p>
       </div>
 
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={450}>
         <ComposedChart 
           data={chartData} 
           margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
@@ -134,12 +134,12 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
               <stop offset="95%" stopColor="#10b981" stopOpacity={0.05}/>
             </linearGradient>
             <linearGradient id="colorShorts" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05}/>
+              <stop offset="5%" stopColor="#f97316" stopOpacity={0.3}/>
+              <stop offset="95%" stopColor="#f97316" stopOpacity={0.05}/>
             </linearGradient>
           </defs>
           
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-gray-700" />
+          <CartesianGrid strokeDasharray="0" stroke="#1a1a1a" vertical={false} />
           
           <XAxis 
             dataKey="price" 
@@ -149,15 +149,19 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
             angle={-45}
             textAnchor="end"
             height={60}
-            stroke="#6b7280"
+            stroke="#4a4a4a"
             tick={{ fontSize: 11 }}
+            axisLine={{ stroke: '#1a1a1a' }}
+            tickLine={false}
           />
           
           <YAxis 
             domain={[0, maxValue]}
             tickFormatter={(value) => formatNum(value, 2)}
-            stroke="#6b7280"
-            tick={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            tick={{ fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
           />
           
           <Tooltip content={<CustomTooltip />} />
@@ -196,13 +200,13 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
           
           <ReferenceLine 
             x={data.currentPrice} 
-            stroke="#3b82f6"
-            strokeWidth={2}
-            strokeDasharray="5 5"
+            stroke="#06b6d4"
+            strokeWidth={2.5}
+            strokeDasharray="0"
             label={{ 
               value: "Current Price", 
               position: "top",
-              fill: "#3b82f6",
+              fill: "#06b6d4",
               fontSize: 12
             }}
           />
@@ -225,16 +229,16 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
           <Area
             type="monotone"
             dataKey="cumulativeLongs"
-            stroke="#059669"
-            strokeWidth={2}
+            stroke="#10b981"
+            strokeWidth={2.5}
             fill="url(#colorLongs)"
             name="Cumulative Longs"
           />
           <Area
             type="monotone"
             dataKey="cumulativeShorts"
-            stroke="#dc2626"
-            strokeWidth={2}
+            stroke="#f97316"
+            strokeWidth={2.5}
             fill="url(#colorShorts)"
             name="Cumulative Shorts"
           />

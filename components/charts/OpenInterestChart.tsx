@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { ChevronDown } from 'lucide-react'
 import { formatNumber, formatTimestamp } from '@/lib/utils'
 
@@ -98,44 +98,42 @@ export function OpenInterestChart({ data }: OpenInterestChartProps) {
           )}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={350}>
         <AreaChart
           data={filteredData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <defs>
             <linearGradient id="colorOI" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.1}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="0" stroke="#1a1a1a" vertical={false} />
           <XAxis
             dataKey="timestamp"
             tickFormatter={formatTimestamp}
-            stroke="#6b7280"
-            style={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            style={{ fontSize: 11 }}
+            axisLine={{ stroke: '#1a1a1a' }}
+            tickLine={false}
           />
           <YAxis
             tickFormatter={formatNumber}
-            stroke="#6b7280"
-            style={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            style={{ fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area
             type="monotone"
             dataKey="open_interest"
-            stroke="#3b82f6"
+            stroke="#06b6d4"
             fillOpacity={1}
             fill="url(#colorOI)"
-            strokeWidth={2}
+            strokeWidth={2.5}
             animationDuration={500}
-          />
-          <Brush
-            dataKey="timestamp"
-            height={30}
-            stroke="#8884d8"
-            tickFormatter={formatTimestamp}
           />
         </AreaChart>
       </ResponsiveContainer>

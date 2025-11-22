@@ -129,7 +129,7 @@ export default function Home() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-normal text-gray-200 mb-1">Market Overview</h1>
+            <h1 className="text-3xl font-bold text-white font-mono-data">Market Overview</h1>
             <p className="text-sm text-gray-500">Positioning data of Hyperliquid leaderboard traders</p>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -221,7 +221,7 @@ export default function Home() {
               placeholder="Search tickers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-[#141414] border border-gray-800 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gray-700"
+              className="pl-9 pr-4 py-2 bg-[#141414] border border-gray-800 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gray-700 font-mono-data"
             />
           </div>
         </div>

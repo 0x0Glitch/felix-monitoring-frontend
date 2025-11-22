@@ -152,7 +152,7 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
     <div className="bg-[#141414] border border-gray-800 overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-800">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <h3 className="text-lg font-semibold text-white">
+          <h3 className="text-lg font-semibold text-white font-mono-data">
             User Positions ({sortedPositions.length})
           </h3>
           
@@ -167,7 +167,7 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
                 setSearchQuery(e.target.value);
                 setCurrentPage(1); // Reset to first page when searching
               }}
-              className="w-full pl-9 pr-4 py-2 bg-[#0a0a0a] border border-gray-700 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+              className="w-full pl-9 pr-4 py-2 bg-[#0a0a0a] border border-gray-700 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 font-mono-data"
             />
           </div>
         </div>

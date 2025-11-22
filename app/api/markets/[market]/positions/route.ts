@@ -64,7 +64,8 @@ export async function GET(
     
     console.log(`[Positions API] Table found: ${tableName}, querying positions...`);
     
-    const result = await client.query(
+    // Add timeout wrapper for the query
+    const queryPromise = client.query(
       `SELECT 
         address,
         market,
@@ -85,9 +86,16 @@ export async function GET(
         created_at AT TIME ZONE 'UTC' as created_at
       FROM ${tableName}
       WHERE market = $1
-      ORDER BY ABS(position_size) DESC`,
+      ORDER BY ABS(position_size) DESC
+      LIMIT 1000`,
       [normalizedMarket]
-    );
+    )
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout after 15 seconds')), 15000)
+    })
+    
+    const result = await Promise.race([queryPromise, timeoutPromise]) as any
     
     console.log(`[Positions API] Found ${result.rowCount} positions`);
 
@@ -106,6 +114,15 @@ export async function GET(
         timestamp: new Date().toISOString(),
         message: `Positions table for ${normalizedMarket} not available`
       });
+    }
+    
+    if (error instanceof Error && error.message.includes('timeout')) {
+      return NextResponse.json({
+        positions: [],
+        count: 0,
+        timestamp: new Date().toISOString(),
+        error: 'Query timed out. Please try again.'
+      }, { status: 408 });
     }
     
     return NextResponse.json(

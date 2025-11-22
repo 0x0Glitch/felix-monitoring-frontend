@@ -41,10 +41,12 @@ export async function fetchMarketData(
   const maxRetries = 3
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    let timeoutId: NodeJS.Timeout | undefined
+    
     try {
       // Add timeout to fetch request
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+      timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
       
       const response = await fetch(`/api/market-data?${params}`, {
         signal: controller.signal
@@ -55,11 +57,16 @@ export async function fetchMarketData(
       if (!response.ok) {
         const error = await response.json()
         
-        // If it's a 503 (service unavailable), retry
-        if (response.status === 503 && attempt < maxRetries) {
+        // If it's a 404 (table not found), don't retry
+        if (response.status === 404) {
+          throw new Error(error.error || 'Market data not available')
+        }
+        
+        // If it's a 408 (timeout) or 503 (service unavailable), retry
+        if ((response.status === 408 || response.status === 503) && attempt < maxRetries) {
           lastError = new Error(error.error || 'Service temporarily unavailable')
-          console.warn(`Attempt ${attempt} failed with 503, retrying...`)
-          await new Promise(resolve => setTimeout(resolve, attempt * 2000))
+          console.warn(`Attempt ${attempt} failed with ${response.status}, retrying...`)
+          await new Promise(resolve => setTimeout(resolve, attempt * 3000)) // Longer delay for timeouts
           continue
         }
         
@@ -85,8 +92,20 @@ export async function fetchMarketData(
     } catch (error: any) {
       lastError = error
       
-      // If it's a network/timeout error and we have retries left, retry
-      if ((error.name === 'AbortError' || error.message.includes('fetch')) && attempt < maxRetries) {
+      // Clear timeout on error
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      
+      // If it's an abort error and we have retries left, retry
+      if (error.name === 'AbortError' && attempt < maxRetries) {
+        console.warn(`Attempt ${attempt} aborted, retrying in ${attempt * 2}s...`)
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000))
+        continue
+      }
+      
+      // If it's a network error and we have retries left, retry
+      if (error.message.includes('fetch') && attempt < maxRetries) {
         console.warn(`Attempt ${attempt} failed with network error, retrying...`)
         await new Promise(resolve => setTimeout(resolve, attempt * 2000))
         continue

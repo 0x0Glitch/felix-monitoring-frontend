@@ -9,8 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
-  Brush
+  ReferenceLine
 } from 'recharts'
 import { formatPercentage, formatTimestamp } from '@/lib/utils'
 import { ChevronDown } from 'lucide-react'
@@ -114,7 +113,7 @@ export function FundingRateChart({ data }: FundingRateChartProps) {
           )}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={350}>
         <AreaChart
           data={filteredData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -133,20 +132,24 @@ export function FundingRateChart({ data }: FundingRateChartProps) {
               <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="0" stroke="#1a1a1a" vertical={false} />
           <XAxis
             dataKey="timestamp"
             tickFormatter={formatTimestamp}
-            stroke="#6b7280"
-            style={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            style={{ fontSize: 11 }}
+            axisLine={{ stroke: '#1a1a1a' }}
+            tickLine={false}
           />
           <YAxis
             tickFormatter={formatPercentage}
-            stroke="#6b7280"
-            style={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            style={{ fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+          <ReferenceLine y={0} stroke="#333" strokeDasharray="0" />
           <Area
             type="monotone"
             dataKey="funding_rate_pct"
@@ -155,12 +158,6 @@ export function FundingRateChart({ data }: FundingRateChartProps) {
             fill="url(#colorFunding)"
             strokeWidth={2}
             animationDuration={500}
-          />
-          <Brush
-            dataKey="timestamp"
-            height={30}
-            stroke="#8884d8"
-            tickFormatter={formatTimestamp}
           />
         </AreaChart>
       </ResponsiveContainer>

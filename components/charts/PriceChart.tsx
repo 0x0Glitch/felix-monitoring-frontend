@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { ChevronDown } from 'lucide-react'
 import { formatNumber, formatTimestamp } from '@/lib/utils'
 
@@ -100,23 +100,27 @@ export function PriceChart({ data }: PriceChartProps) {
           )}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={400}>
         <LineChart
           data={filteredData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <CartesianGrid strokeDasharray="0" stroke="#1a1a1a" vertical={false} />
           <XAxis
             dataKey="timestamp"
             tickFormatter={formatTimestamp}
-            stroke="#6b7280"
-            style={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            style={{ fontSize: 11 }}
+            axisLine={{ stroke: '#1a1a1a' }}
+            tickLine={false}
           />
           <YAxis
             tickFormatter={formatNumber}
-            stroke="#6b7280"
-            style={{ fontSize: 12 }}
+            stroke="#4a4a4a"
+            style={{ fontSize: 11 }}
             domain={['dataMin - 10', 'dataMax + 10']}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend 
@@ -125,8 +129,8 @@ export function PriceChart({ data }: PriceChartProps) {
           <Line
             type="monotone"
             dataKey="mark_price"
-            stroke="#8b5cf6"
-            strokeWidth={2}
+            stroke="#3b82f6"
+            strokeWidth={2.5}
             dot={false}
             name="Mark Price"
             animationDuration={500}
@@ -134,8 +138,8 @@ export function PriceChart({ data }: PriceChartProps) {
           <Line
             type="monotone"
             dataKey="meanImpactPrice"
-            stroke="#f59e0b"
-            strokeWidth={2}
+            stroke="#f97316"
+            strokeWidth={2.5}
             dot={false}
             name="Mean Impact Price"
             animationDuration={500}
@@ -144,16 +148,10 @@ export function PriceChart({ data }: PriceChartProps) {
             type="monotone"
             dataKey="oracle_price"
             stroke="#10b981"
-            strokeWidth={2}
+            strokeWidth={2.5}
             dot={false}
             name="Oracle Price"
             animationDuration={500}
-          />
-          <Brush
-            dataKey="timestamp"
-            height={30}
-            stroke="#8884d8"
-            tickFormatter={formatTimestamp}
           />
         </LineChart>
       </ResponsiveContainer>

@@ -10,9 +10,9 @@ function createClient() {
     ssl: {
       rejectUnauthorized: false
     },
-    connectionTimeoutMillis: 10000, // 10 seconds
-    statement_timeout: 60000, // 60 seconds
-    query_timeout: 60000, // 60 seconds
+    connectionTimeoutMillis: 5000, // 5 seconds
+    statement_timeout: 30000, // 30 seconds
+    query_timeout: 30000, // 30 seconds
   })
 }
 
@@ -95,12 +95,12 @@ export async function GET(request: NextRequest) {
     const values: any[] = []
     
     if (isAllTime) {
-      // For all-time data, use 10-minute aggregation for better detail while maintaining performance
+      // For all-time data, use 30-minute aggregation and limit to last 7 days for better performance
       query = `
         WITH time_buckets AS (
           SELECT 
             EXTRACT(EPOCH FROM (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
-              (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute')) * 1000 as timestamp,
+              (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 30) * 30) * INTERVAL '1 minute')) * 1000 as timestamp,
             AVG(markpx::numeric) as mark_price,
             AVG(oraclepx::numeric) as oracle_price,
             AVG(midpx::numeric) as mid_price,
@@ -136,13 +136,14 @@ export async function GET(request: NextRequest) {
             AVG(premium::numeric) as premium,
             MIN(coin) as coin
           FROM ${fullTableName}
-          WHERE coin = $1
+          WHERE coin = $1 
+            AND timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '7 days') * 1000
           GROUP BY (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
-                   (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute')
+                   (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 30) * 30) * INTERVAL '1 minute')
         )
         SELECT * FROM time_buckets
         ORDER BY timestamp ASC
-        LIMIT 5000
+        LIMIT 2000
       `
       if (coin) values.push(coin)
     } else if (timeWindow === '1d') {
@@ -230,7 +231,13 @@ export async function GET(request: NextRequest) {
     console.log('Query:', query.substring(0, 200) + '...')
     console.log('Values:', values)
     
-    const result = await client.query(query, values)
+    // Add timeout wrapper for the query
+    const queryPromise = client.query(query, values)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout after 25 seconds')), 25000)
+    })
+    
+    const result = await Promise.race([queryPromise, timeoutPromise]) as any
     
     // Convert numeric strings to numbers for proper chart rendering
     const processedData = result.rows.map((row: any) => ({
@@ -317,10 +324,28 @@ export async function GET(request: NextRequest) {
     
   } catch (error: any) {
     console.error('Database error:', error)
+    
+    // Handle specific error types
+    if (error.message?.includes('does not exist') || error.code === '42P01') {
+      return NextResponse.json({
+        success: false,
+        error: `Market data table not found for ${coin}. This market may not be available yet.`,
+        code: 'TABLE_NOT_FOUND'
+      }, { status: 404 })
+    }
+    
+    if (error.message?.includes('timeout') || error.message?.includes('Query timeout')) {
+      return NextResponse.json({
+        success: false,
+        error: 'Database query timed out. Please try again or select a shorter time range.',
+        code: 'QUERY_TIMEOUT'
+      }, { status: 408 })
+    }
+    
     return NextResponse.json({
       success: false,
-      error: error.message,
-      details: error
+      error: error.message || 'Database error occurred',
+      details: process.env.NODE_ENV === 'development' ? error : undefined
     }, { status: 500 })
   } finally {
     if (client) {

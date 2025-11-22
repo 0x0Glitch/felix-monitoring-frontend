@@ -113,11 +113,6 @@ export function Dashboard({ coin }: DashboardProps) {
       <div className="max-w-7xl mx-auto">
         {/* Controls */}
         <div className="flex justify-end items-center gap-4 mb-6">
-            {isSampled && (
-              <span className="text-xs px-3 py-1.5 bg-[#1a1a1a] text-amber-400 border border-gray-800">
-                Data sampled
-              </span>
-            )}
             <div className="flex items-center gap-2 text-sm">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
               <span className="text-gray-400">Live:</span>

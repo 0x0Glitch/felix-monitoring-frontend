@@ -105,7 +105,7 @@ export default function MarketDropdown({ currentMarket, isInNavigation = false }
                 placeholder="Search markets..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-[#141414] border border-gray-700 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+                className="w-full pl-9 pr-3 py-2 bg-[#141414] border border-gray-700 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 font-mono-data"
                 autoFocus
               />
             </div>
