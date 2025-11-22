@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { ChevronUp, ChevronDown, Search } from "lucide-react";
 import { formatUSD, formatNum, formatPct, timeAgo, formatTsFull } from "@/lib/utils";
+import AddressLink from "@/components/AddressLink";
 
 interface Position {
   address: string;
@@ -35,9 +37,10 @@ interface PositionsTableProps {
 export default function PositionsTable({ positions, isLoading }: PositionsTableProps) {
   const [sortField, setSortField] = useState<SortField>("position_size");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [positionFilter, setPositionFilter] = useState<PositionFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [rowsPerPage, setRowsPerPage] = useState(20);
 
   const filteredPositions = useMemo(() => {
@@ -48,8 +51,13 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
     });
   }, [positions, positionFilter]);
 
+  const searchedPositions = useMemo(() => {
+    if (!searchQuery) return filteredPositions;
+    return filteredPositions.filter(p => p.address.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [filteredPositions, searchQuery]);
+
   const sortedPositions = useMemo(() => {
-    const sorted = [...filteredPositions].sort((a, b) => {
+    const sorted = [...searchedPositions].sort((a, b) => {
       let aVal: string | number | null = a[sortField];
       let bVal: string | number | null = b[sortField];
 
@@ -77,7 +85,7 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
     });
 
     return sorted;
-  }, [filteredPositions, sortField, sortOrder]);
+  }, [searchedPositions, sortField, sortOrder]);
 
   const paginatedPositions = useMemo(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
@@ -123,10 +131,10 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+      <div className="bg-[#141414] border border-gray-800 p-8">
         <div className="flex flex-col items-center justify-center space-y-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          <p className="text-gray-500 dark:text-gray-400">Loading positions...</p>
+          <div className="animate-spin h-10 w-10 border-b-2 border-emerald-400"></div>
+          <p className="text-gray-400">Loading positions...</p>
         </div>
       </div>
     );
@@ -134,59 +142,77 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
 
   if (!positions || positions.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
-        <p className="text-gray-500 dark:text-gray-400 text-center">No positions found for this market.</p>
+      <div className="bg-[#141414] border border-gray-800 p-8">
+        <p className="text-gray-400 text-center">No positions found for this market.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          User Positions ({sortedPositions.length} {positionFilter !== "all" ? `${positionFilter}` : ""})
-        </h3>
-        <div className="flex items-center gap-2">
+    <div className="bg-[#141414] border border-gray-800 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-800">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <h3 className="text-lg font-semibold text-white">
+            User Positions ({sortedPositions.length})
+          </h3>
+          
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search by address..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1); // Reset to first page when searching
+              }}
+              className="w-full pl-9 pr-4 py-2 bg-[#0a0a0a] border border-gray-700 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gray-600"
+            />
+          </div>
+        </div>
+        
+        {/* Filter Buttons */}
+        <div className="flex items-center space-x-1">
           <button
             onClick={() => setPositionFilter("all")}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border transition-colors ${
               positionFilter === "all"
-                ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                ? "bg-white border-white text-black"
+                : "text-gray-400 border-gray-700 hover:bg-gray-700/50"
             }`}
           >
             All
           </button>
           <button
             onClick={() => setPositionFilter("long")}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border transition-colors ${
               positionFilter === "long"
-                ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                ? "bg-white border-white text-black"
+                : "text-gray-400 border-gray-700 hover:bg-gray-700/50"
             }`}
           >
-            Longs
+            Long
           </button>
           <button
             onClick={() => setPositionFilter("short")}
-            className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border transition-colors ${
               positionFilter === "short"
-                ? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
-                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                ? "bg-white border-white text-black"
+                : "text-gray-400 border-gray-700 hover:bg-gray-700/50"
             }`}
           >
-            Shorts
+            Short
           </button>
         </div>
       </div>
-      
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <thead className="bg-[#0a0a0a] border-b border-gray-800">
             <tr>
               <th className="px-6 py-3 text-left">
                 <button
-                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  className="text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-200 flex items-center"
                   onClick={() => handleSort("address")}
                 >
                   Address
@@ -195,7 +221,7 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
               </th>
               <th className="px-6 py-3 text-left">
                 <button
-                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  className="text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-200 flex items-center"
                   onClick={() => handleSort("position_size")}
                 >
                   Position Size
@@ -204,7 +230,7 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
               </th>
               <th className="px-6 py-3 text-left">
                 <button
-                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  className="text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-200 flex items-center"
                   onClick={() => handleSort("liquidation_price")}
                 >
                   Liquidation Price
@@ -213,7 +239,7 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
               </th>
               <th className="px-6 py-3 text-left">
                 <button
-                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  className="text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-200 flex items-center"
                   onClick={() => handleSort("unrealized_pnl")}
                 >
                   Unrealized PnL
@@ -222,7 +248,7 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
               </th>
               <th className="px-6 py-3 text-left">
                 <button
-                  className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider hover:text-gray-900 dark:hover:text-gray-100 flex items-center"
+                  className="text-xs font-medium text-gray-400 uppercase tracking-wider hover:text-gray-200 flex items-center"
                   onClick={() => handleSort("leverage_value")}
                 >
                   Leverage
@@ -230,109 +256,107 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
                 </button>
               </th>
               <th className="px-6 py-3 text-left">
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Actions
                 </span>
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+          <tbody className="bg-[#141414] divide-y divide-gray-800">
             {paginatedPositions.map((position) => {
               const isExpanded = expandedRows.has(position.address);
               const posSize = parseFloat(String(position.position_size));
               const pnl = parseFloat(String(position.unrealized_pnl));
               const isLong = posSize > 0;
-              const pnlClass = pnl >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+              const pnlClass = pnl >= 0 ? "text-emerald-400" : "text-red-400";
               
               return (
                 <React.Fragment key={position.address}>
-                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <tr className="hover:bg-[#1a1a1a] transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {position.address.slice(0, 6)}...{position.address.slice(-4)}
-                        </div>
+                        <AddressLink address={position.address} className="text-sm font-medium text-white" />
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        <div className="font-mono-data text-sm font-medium text-white">
                           {formatNum(Math.abs(posSize), 4)}
                         </div>
-                        <div className={`text-xs ${isLong ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        <div className={`font-mono-data text-xs ${isLong ? "text-emerald-400" : "text-red-400"}`}>
                           {isLong ? "LONG" : "SHORT"}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
+                      <div className="font-mono-data text-sm text-white">
                         {position.liquidation_price ? formatUSD(parseFloat(String(position.liquidation_price))) : "—"}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`text-sm font-medium ${pnlClass}`}>
+                      <div className={`font-mono-data text-sm font-medium ${pnlClass}`}>
                         {formatUSD(pnl)}
                       </div>
                       {position.return_on_equity && (
-                        <div className={`text-xs ${pnlClass}`}>
+                        <div className={`font-mono-data text-xs ${pnlClass}`}>
                           {parseFloat(String(position.return_on_equity)) >= 0 ? "+" : ""}{formatPct(position.return_on_equity, 2)}
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
+                      <div className="font-mono-data text-sm text-white">
                         {parseFloat(String(position.leverage_value))}x
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="font-mono-data text-xs text-gray-400">
                         {position.leverage_type}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
                         onClick={() => toggleRowExpansion(position.address)}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
+                        className="text-emerald-400 hover:text-emerald-300 text-sm font-medium"
                       >
                         {isExpanded ? "Hide" : "Details"}
                       </button>
                     </td>
                   </tr>
                   {isExpanded && (
-                    <tr className="bg-gray-50 dark:bg-gray-700">
+                    <tr className="bg-[#0a0a0a]">
                       <td colSpan={6} className="px-6 py-4">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Entry Price</div>
-                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.entry_price)))}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Entry Price</div>
+                            <div className="font-mono-data font-medium text-white">{formatUSD(parseFloat(String(position.entry_price)))}</div>
                           </div>
                           <div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Position Value</div>
-                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.position_value)))}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Position Value</div>
+                            <div className="font-mono-data font-medium text-white">{formatUSD(parseFloat(String(position.position_value)))}</div>
                           </div>
                           <div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Margin Used</div>
-                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.margin_used)))}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Margin Used</div>
+                            <div className="font-mono-data font-medium text-white">{formatUSD(parseFloat(String(position.margin_used)))}</div>
                           </div>
                           <div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Account Value</div>
-                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.account_value)))}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Account Value</div>
+                            <div className="font-mono-data font-medium text-white">{formatUSD(parseFloat(String(position.account_value)))}</div>
                           </div>
                           <div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Total Margin</div>
-                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.total_margin_used)))}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Total Margin</div>
+                            <div className="font-mono-data font-medium text-white">{formatUSD(parseFloat(String(position.total_margin_used)))}</div>
                           </div>
                           <div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Withdrawable</div>
-                            <div className="font-medium text-gray-900 dark:text-white">{formatUSD(parseFloat(String(position.withdrawable)))}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Withdrawable</div>
+                            <div className="font-mono-data font-medium text-white">{formatUSD(parseFloat(String(position.withdrawable)))}</div>
                           </div>
                           <div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Opened</div>
-                            <div className="font-medium text-gray-900 dark:text-white" title={formatTsFull(position.created_at)}>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Opened</div>
+                            <div className="font-mono-data font-medium text-white" title={formatTsFull(position.created_at)}>
                               {timeAgo(position.created_at)}
                             </div>
                           </div>
                           <div>
-                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider mb-1">Last Updated</div>
-                            <div className="font-medium text-gray-900 dark:text-white" title={formatTsFull(position.last_updated)}>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">Last Updated</div>
+                            <div className="font-mono-data font-medium text-white" title={formatTsFull(position.last_updated)}>
                               {timeAgo(position.last_updated)}
                             </div>
                           </div>
@@ -347,13 +371,13 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
         </table>
       </div>
       
-      <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600 dark:text-gray-400">Rows per page:</label>
+          <label className="text-sm text-gray-400">Rows per page:</label>
           <select
             value={rowsPerPage}
             onChange={(e) => setRowsPerPage(Number(e.target.value))}
-            className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="px-3 py-1 text-sm border border-gray-700 focus:outline-none focus:border-emerald-500 bg-[#0a0a0a] text-white"
           >
             <option value={10}>10</option>
             <option value={20}>20</option>
@@ -363,7 +387,7 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
         </div>
         
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+          <span className="text-sm text-gray-400">
             Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, sortedPositions.length)} of {sortedPositions.length}
           </span>
         </div>
@@ -372,10 +396,10 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
           <button
             onClick={() => setCurrentPage(1)}
             disabled={currentPage === 1}
-            className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+            className={`px-2 py-1 text-sm border transition-colors ${
               currentPage === 1
-                ? "text-gray-400 bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                ? "text-gray-600 border-gray-800 cursor-not-allowed"
+                : "text-gray-300 border-gray-700 hover:bg-gray-700/50"
             }`}
           >
             First
@@ -383,10 +407,10 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
           <button
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+            className={`px-2 py-1 text-sm border transition-colors ${
               currentPage === 1
-                ? "text-gray-400 bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                ? "text-gray-600 border-gray-800 cursor-not-allowed"
+                : "text-gray-300 border-gray-700 hover:bg-gray-700/50"
             }`}
           >
             Previous
@@ -406,10 +430,10 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                  className={`px-3 py-1 text-sm border transition-colors ${
                     currentPage === pageNum
-                      ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium"
-                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                      ? "bg-white border-white text-black font-medium"
+                      : "text-gray-300 border-gray-700 hover:bg-gray-700/50"
                   }`}
                 >
                   {pageNum}
@@ -421,10 +445,10 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
           <button
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+            className={`px-2 py-1 text-sm border transition-colors ${
               currentPage === totalPages
-                ? "text-gray-400 bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                ? "text-gray-600 border-gray-800 cursor-not-allowed"
+                : "text-gray-300 border-gray-700 hover:bg-gray-700/50"
             }`}
           >
             Next
@@ -432,10 +456,10 @@ export default function PositionsTable({ positions, isLoading }: PositionsTableP
           <button
             onClick={() => setCurrentPage(totalPages)}
             disabled={currentPage === totalPages}
-            className={`px-2 py-1 text-sm rounded-lg transition-colors ${
+            className={`px-2 py-1 text-sm border transition-colors ${
               currentPage === totalPages
-                ? "text-gray-400 bg-gray-50 dark:bg-gray-700 cursor-not-allowed"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600"
+                ? "text-gray-600 border-gray-800 cursor-not-allowed"
+                : "text-gray-300 border-gray-700 hover:bg-gray-700/50"
             }`}
           >
             Last

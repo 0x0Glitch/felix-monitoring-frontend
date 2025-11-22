@@ -34,10 +34,10 @@ interface LiquidationChartProps {
 export default function LiquidationChart({ data, isLoading }: LiquidationChartProps) {
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+      <div className="bg-[#141414] border border-gray-800 p-8">
         <div className="flex flex-col items-center justify-center space-y-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-          <p className="text-gray-500 dark:text-gray-400">Loading liquidation data...</p>
+          <div className="animate-spin h-10 w-10 border-b-2 border-emerald-400"></div>
+          <p className="text-gray-400">Loading liquidation data...</p>
         </div>
       </div>
     );
@@ -45,8 +45,8 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
 
   if (!data || !data.points || data.points.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
-        <p className="text-gray-500 dark:text-gray-400 text-center">No liquidation data available.</p>
+      <div className="bg-[#141414] border border-gray-800 p-8">
+        <p className="text-gray-400 text-center">No liquidation data available.</p>
       </div>
     );
   }
@@ -75,27 +75,27 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
       const cumulativeShorts = payload.find((p) => p.dataKey === "cumulativeShorts");
 
       return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4">
-          <p className="font-semibold text-gray-900 dark:text-white mb-2">
+        <div className="bg-[#0a0a0a] border border-gray-700 p-4">
+          <p className="font-mono-data font-semibold text-white mb-2">
             Price: {formatUSD(label)}
           </p>
           {((longLiquidation?.value ?? 0) > 0 || (shortLiquidation?.value ?? 0) > 0) && (
             <>
               <div className="space-y-1 mb-2">
-                <p className="text-sm text-green-600 dark:text-green-400">
+                <p className="font-mono-data text-sm text-emerald-400">
                   Longs: {formatNum(longLiquidation?.value || 0, 4)} tokens
                 </p>
-                <p className="text-sm text-red-600 dark:text-red-400">
+                <p className="font-mono-data text-sm text-red-400">
                   Shorts: {formatNum(shortLiquidation?.value || 0, 4)} tokens
                 </p>
               </div>
             </>
           )}
-          <div className="border-t dark:border-gray-700 pt-2 mt-2 space-y-1">
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="border-t border-gray-700 pt-2 mt-2 space-y-1">
+            <p className="font-mono-data text-xs text-gray-400">
               Cumulative Longs: {formatNum(cumulativeLongs?.value || 0, 2)} tokens
             </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+            <p className="font-mono-data text-xs text-gray-400">
               Cumulative Shorts: {formatNum(cumulativeShorts?.value || 0, 2)} tokens
             </p>
           </div>
@@ -113,10 +113,10 @@ export default function LiquidationChart({ data, isLoading }: LiquidationChartPr
   const maxValue = Math.max(maxLong, maxShort, maxCumulativeLongs, maxCumulativeShorts) * 1.1;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className="bg-[#141414] border border-gray-800 p-6">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Liquidation Chart</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        <h3 className="text-lg font-semibold text-white">Liquidation Chart</h3>
+        <p className="font-mono-data text-sm text-gray-400 mt-1">
           Token amounts liquidatable at different price points. Current price: {formatUSD(data.currentPrice)}
         </p>
       </div>

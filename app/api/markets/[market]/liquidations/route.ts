@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "pg";
 import { MARKET_CONFIG } from "@/lib/config";
+import { getMarketTableNames, normalizeMarketId } from "@/lib/markets";
 
 function createClient() {
   return new Client({
@@ -28,18 +29,14 @@ export async function GET(
   let market = decodeURIComponent(params.market);
   
   // Normalize market format: lowercase dex prefix, uppercase market symbol
-  if (market.includes(':')) {
-    const parts = market.split(':');
-    market = parts[0].toLowerCase() + ':' + (parts[1] || '').toUpperCase();
-  } else {
-    market = market.toUpperCase();
-  }
+  const normalizedMarket = normalizeMarketId(market);
     
-  // Get schema and table from configuration
-  const userPositionsSchema = MARKET_CONFIG.userPositionsSchema;
-  const userPositionsTable = MARKET_CONFIG.userPositionsTable;
+  // Get schema and table based on market
+  const { userPositionsSchema, userPositionsTable, marketSchema, marketTable } = getMarketTableNames(normalizedMarket);
 
-  console.log(`[Liquidations API] Fetching data for market: ${market}`);
+  console.log(`[Liquidations API] Fetching data for market: ${normalizedMarket}`);
+  console.log(`[Liquidations API] Using market table: ${marketSchema}.${marketTable}`);
+  console.log(`[Liquidations API] Using positions table: ${userPositionsSchema}.${userPositionsTable}`);
 
   const client = createClient();
   
@@ -48,11 +45,11 @@ export async function GET(
     
     const priceResult = await client.query(
       `SELECT markpx::numeric as mark_price 
-       FROM ${MARKET_CONFIG.marketSchema}.${MARKET_CONFIG.marketTable}
+       FROM ${marketSchema}.${marketTable}
        WHERE coin = $1 
        ORDER BY timestamp DESC 
        LIMIT 1`,
-      [market]
+      [normalizedMarket]
     );
     
     if (!priceResult.rows.length) {
@@ -84,7 +81,7 @@ export async function GET(
         points: [],
         totalPositions: 0,
         timestamp: new Date().toISOString(),
-        message: `Positions table for ${market} not available`
+        message: `Positions table for ${normalizedMarket} not available`
       });
     }
     
@@ -98,7 +95,7 @@ export async function GET(
       WHERE market = $1 
         AND liquidation_price IS NOT NULL
         AND position_size != 0`,
-      [market]
+      [normalizedMarket]
     );
     
     console.log(`[Liquidations API] Found ${positionsResult.rowCount} positions`);
@@ -182,7 +179,7 @@ export async function GET(
         points: [],
         totalPositions: 0,
         timestamp: new Date().toISOString(),
-        message: `Positions table for ${market} not available`
+        message: `Positions table for ${normalizedMarket} not available`
       });
     }
     

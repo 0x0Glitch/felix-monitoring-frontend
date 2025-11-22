@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Client } from 'pg'
 import { MARKET_CONFIG } from '@/lib/config'
+import { getMarketTableNames, normalizeMarketId } from '@/lib/markets'
 
 // Function to create a new client for each request (better for serverless)
 function createClient() {
@@ -78,10 +79,12 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    // Get table name from configuration
-    const schema = MARKET_CONFIG.marketSchema
-    const table = MARKET_CONFIG.marketTable
-    const fullTableName = `${schema}.${table}`
+    // Get table name based on the market
+    const normalizedCoin = normalizeMarketId(coin)
+    const { marketSchema, marketTable } = getMarketTableNames(normalizedCoin)
+    const fullTableName = `${marketSchema}.${marketTable}`
+    
+    console.log(`Using dynamic table for market ${normalizedCoin}: ${fullTableName}`)
     
     // For "all" time window, we'll sample the data to avoid too much data
     const isAllTime = timeWindow === 'all'

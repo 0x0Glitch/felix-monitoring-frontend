@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { Client } from 'pg'
 import { MARKET_CONFIG } from '@/lib/config'
+import { getMarketTableNames, AVAILABLE_MARKETS } from '@/lib/markets'
 
 // Function to create a new client for each request (better for serverless)
 function createClient() {
@@ -14,13 +15,14 @@ function createClient() {
   })
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const marketParam = searchParams.get('market') || AVAILABLE_MARKETS[0]?.id || 'flx:TSLA';
   let client: Client | null = null
   
-  // Get table name from configuration
-  const schema = MARKET_CONFIG.marketSchema
-  const table = MARKET_CONFIG.marketTable
-  const fullTableName = `${schema}.${table}`
+  // Get table name based on market
+  const { marketSchema, marketTable } = getMarketTableNames(marketParam);
+  const fullTableName = `${marketSchema}.${marketTable}`
   
   try {
     // Test database connection
@@ -38,6 +40,8 @@ export async function GET() {
     return NextResponse.json({
       status: 'healthy',
       database: 'connected',
+      market: marketParam,
+      table: fullTableName,
       recentRecords: parseInt(result.rows[0]?.count || 0),
       timestamp: new Date().toISOString()
     })

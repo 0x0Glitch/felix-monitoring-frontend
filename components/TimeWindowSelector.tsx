@@ -19,17 +19,17 @@ const timeWindows: { value: TimeWindow; label: string }[] = [
 
 export function TimeWindowSelector({ value, onChange }: TimeWindowSelectorProps) {
   return (
-    <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
-      <Clock className="w-4 h-4 ml-2 text-gray-600 dark:text-gray-400" />
+    <div className="flex items-center gap-2 p-1 bg-[#141414] border border-gray-800">
+      <Clock className="w-4 h-4 ml-2 text-gray-500" />
       {timeWindows.map((window) => (
         <button
           key={window.value}
           onClick={() => onChange(window.value)}
           className={cn(
-            'px-4 py-2 text-sm font-medium rounded-md transition-all duration-150 transform active:scale-95',
+            'px-4 py-2 text-sm font-medium transition-colors',
             value === window.value
-              ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-sm scale-100'
-              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
+              ? 'bg-emerald-600 text-white border border-emerald-500'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
           )}
         >
           {window.label}

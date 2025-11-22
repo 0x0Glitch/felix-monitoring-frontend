@@ -1,28 +1,58 @@
 "use client";
 
 import { use } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Dashboard } from "@/components/Dashboard";
-import Navigation from "@/components/Navigation";
+import MarketDropdown from "@/components/MarketDropdown";
+import Image from "next/image";
 
 export default function MarketPage({ params: paramsPromise }: { params: Promise<{ market: string }> }) {
   const params = use(paramsPromise);
   const market = decodeURIComponent(params.market);
+  const pathname = usePathname();
+  const encodedMarket = encodeURIComponent(market);
+  
+  const decodedPathname = decodeURIComponent(pathname);
+  const isMarketMetrics = decodedPathname === `/markets/${market}` || pathname === `/markets/${encodedMarket}`;
+  const isUserMetrics = decodedPathname === `/markets/${market}/users` || pathname === `/markets/${encodedMarket}/users`;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="p-4 md:p-6">
-        <div className="max-w-7xl mx-auto mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Market Metrics - {market}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Real-time market data visualization
-            </p>
+    <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Top Navigation Bar */}
+      <div className="bg-[#0a0a0a] border-b border-gray-800 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Left: Dropdown */}
+          <div className="flex items-center gap-4">
+            <MarketDropdown currentMarket={market} isInNavigation={false} />
           </div>
-          <Navigation market={market} />
+          
+          {/* Right: Navigation Tabs */}
+          <nav className="flex items-center gap-1">
+            <Link
+              href={`/markets/${encodedMarket}`}
+              className={`px-6 py-2.5 text-sm font-medium transition-all ${
+                isMarketMetrics
+                  ? "bg-white text-black"
+                  : "text-gray-400 hover:text-white hover:bg-[#141414]"
+              }`}
+            >
+              Market Metrics
+            </Link>
+            <Link
+              href={`/markets/${encodedMarket}/users`}
+              className={`px-6 py-2.5 text-sm font-medium transition-all ${
+                isUserMetrics
+                  ? "bg-white text-black"
+                  : "text-gray-400 hover:text-white hover:bg-[#141414]"
+              }`}
+            >
+              User Metrics
+            </Link>
+          </nav>
         </div>
       </div>
+      
       <Dashboard coin={market} />
     </div>
   );

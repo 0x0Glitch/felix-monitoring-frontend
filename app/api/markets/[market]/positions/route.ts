@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Client } from "pg";
 import { MARKET_CONFIG } from "@/lib/config";
+import { getMarketTableNames, normalizeMarketId } from "@/lib/markets";
 
 function createClient() {
   return new Client({
@@ -27,11 +28,12 @@ export async function GET(
     market = market.toUpperCase();
   }
     
-  // Get schema and table from configuration
-  const userPositionsSchema = MARKET_CONFIG.userPositionsSchema;
-  const userPositionsTable = MARKET_CONFIG.userPositionsTable;
+  // Get schema and table based on market
+  const normalizedMarket = normalizeMarketId(market);
+  const { userPositionsSchema, userPositionsTable } = getMarketTableNames(normalizedMarket);
 
-  console.log(`[Positions API] Fetching positions for market: ${market}`);
+  console.log(`[Positions API] Fetching positions for market: ${normalizedMarket}`);
+  console.log(`[Positions API] Using table: ${userPositionsSchema}.${userPositionsTable}`);
 
   const client = createClient();
   
@@ -56,7 +58,7 @@ export async function GET(
         positions: [],
         count: 0,
         timestamp: new Date().toISOString(),
-        message: `Positions table for ${market} not available`
+        message: `Positions table for ${normalizedMarket} not available`
       });
     }
     
@@ -84,7 +86,7 @@ export async function GET(
       FROM ${tableName}
       WHERE market = $1
       ORDER BY ABS(position_size) DESC`,
-      [market]
+      [normalizedMarket]
     );
     
     console.log(`[Positions API] Found ${result.rowCount} positions`);
@@ -102,7 +104,7 @@ export async function GET(
         positions: [],
         count: 0,
         timestamp: new Date().toISOString(),
-        message: `Positions table for ${market} not available`
+        message: `Positions table for ${normalizedMarket} not available`
       });
     }
     

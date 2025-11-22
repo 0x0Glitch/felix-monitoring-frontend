@@ -1,8 +1,10 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
-import Navigation from "@/components/Navigation";
+import MarketDropdown from "@/components/MarketDropdown";
 
 const PositionsTable = dynamic(() => import("@/components/PositionsTable"), { ssr: false });
 const LiquidationChart = dynamic(() => import("@/components/LiquidationChart"), { ssr: false });
@@ -71,42 +73,73 @@ export default function UsersPage({ params: paramsPromise }: { params: Promise<{
     return () => clearInterval(interval);
   }, [market]);
 
+  const pathname = usePathname();
+  const encodedMarket = encodeURIComponent(market);
+  
+  const decodedPathname = decodeURIComponent(pathname);
+  const isMarketMetrics = decodedPathname === `/markets/${market}` || pathname === `/markets/${encodedMarket}`;
+  const isUserMetrics = decodedPathname === `/markets/${market}/users` || pathname === `/markets/${encodedMarket}/users`;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              User Metrics - {market}
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Monitor user positions and liquidation risks
-            </p>
+    <div className="min-h-screen bg-[#0a0a0a]">
+      {/* Top Navigation Bar */}
+      <div className="bg-[#0a0a0a] border-b border-gray-800 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Left: Dropdown */}
+          <div className="flex items-center gap-4">
+            <MarketDropdown currentMarket={market} isInNavigation={false} />
           </div>
-          <Navigation market={market} />
+          
+          {/* Right: Navigation Tabs */}
+          <nav className="flex items-center gap-1">
+            <Link
+              href={`/markets/${encodedMarket}`}
+              className={`px-6 py-2.5 text-sm font-medium transition-all ${
+                isMarketMetrics
+                  ? "bg-white text-black"
+                  : "text-gray-400 hover:text-white hover:bg-[#141414]"
+              }`}
+            >
+              Market Metrics
+            </Link>
+            <Link
+              href={`/markets/${encodedMarket}/users`}
+              className={`px-6 py-2.5 text-sm font-medium transition-all ${
+                isUserMetrics
+                  ? "bg-white text-black"
+                  : "text-gray-400 hover:text-white hover:bg-[#141414]"
+              }`}
+            >
+              User Metrics
+            </Link>
+          </nav>
         </div>
+      </div>
+      
+      <div className="p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
 
         {positionsData && positionsData.positions && (
           <section className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-              <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Total Positions</div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">{positionsData.count}</div>
+            <div className="bg-[#141414] p-5 border border-gray-800">
+              <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Total Positions</div>
+              <div className="font-mono-data text-2xl font-semibold text-white">{positionsData.count}</div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-              <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Long Positions</div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            <div className="bg-[#141414] p-5 border border-gray-800">
+              <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Long Positions</div>
+              <div className="font-mono-data text-2xl font-semibold text-emerald-400">
                 {positionsData.positions.filter((p: { position_size: string | number }) => parseFloat(String(p.position_size)) > 0).length}
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-              <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Short Positions</div>
-              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+            <div className="bg-[#141414] p-5 border border-gray-800">
+              <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Short Positions</div>
+              <div className="font-mono-data text-2xl font-semibold text-red-400">
                 {positionsData.positions.filter((p: { position_size: string | number }) => parseFloat(String(p.position_size)) < 0).length}
               </div>
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-              <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">At Risk</div>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+            <div className="bg-[#141414] p-5 border border-gray-800">
+              <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">At Risk</div>
+              <div className="font-mono-data text-2xl font-semibold text-orange-400">
                 {positionsData.positions.filter((p: { liquidation_price: string | number | null }) => p.liquidation_price !== null).length}
               </div>
             </div>
@@ -114,9 +147,9 @@ export default function UsersPage({ params: paramsPromise }: { params: Promise<{
         )}
 
         {(positionsError || liquidationError) && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-800 dark:text-red-300 font-medium">Error loading data</p>
-            <p className="text-red-600 dark:text-red-400 text-sm mt-1">
+          <div className="bg-red-900/20 border border-red-800 p-4 mb-6">
+            <p className="text-red-300 font-medium">Error loading data</p>
+            <p className="text-red-400 text-sm mt-1">
               {positionsError || liquidationError || "Failed to fetch data. Please try again."}
             </p>
           </div>
@@ -135,6 +168,7 @@ export default function UsersPage({ params: paramsPromise }: { params: Promise<{
             isLoading={positionsLoading}
           />
         </section>
+        </div>
       </div>
     </div>
   );
