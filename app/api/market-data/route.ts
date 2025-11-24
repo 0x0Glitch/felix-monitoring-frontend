@@ -95,57 +95,53 @@ export async function GET(request: NextRequest) {
     const values: any[] = []
     
     if (isAllTime) {
-      // For all-time data, use 30-minute aggregation and limit to last 7 days for better performance
+      // For all-time data, use 10-minute aggregation and fetch ALL available data from database
       query = `
-        WITH time_buckets AS (
-          SELECT 
-            EXTRACT(EPOCH FROM (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
-              (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 30) * 30) * INTERVAL '1 minute')) * 1000 as timestamp,
-            AVG(markpx::numeric) as mark_price,
-            AVG(oraclepx::numeric) as oracle_price,
-            AVG(midpx::numeric) as mid_price,
-            AVG(funding::numeric) as funding_rate_pct,
-            AVG(markpx::numeric * openinterest::numeric) as open_interest,
-            AVG(bid_depth_5bps::numeric) as bid_depth_5bps,
-            AVG(ask_depth_5bps::numeric) as ask_depth_5bps,
-            AVG(bid_depth_10bps::numeric) as bid_depth_10bps,
-            AVG(ask_depth_10bps::numeric) as ask_depth_10bps,
-            AVG(bid_depth_50bps::numeric) as bid_depth_50bps,
-            AVG(ask_depth_50bps::numeric) as ask_depth_50bps,
-            AVG(bid_depth_100bps::numeric) as bid_depth_100bps,
-            AVG(ask_depth_100bps::numeric) as ask_depth_100bps,
-            null as bid_depth_5pct,
-            null as ask_depth_5pct,
-            null as bid_depth_10pct,
-            null as ask_depth_10pct,
-            null as bid_depth_25pct,
-            null as ask_depth_25pct,
-            (AVG(bid_depth_5bps::numeric) + AVG(ask_depth_5bps::numeric)) as total_depth_5bps,
-            (AVG(bid_depth_10bps::numeric) + AVG(ask_depth_10bps::numeric)) as total_depth_10bps,
-            (AVG(bid_depth_50bps::numeric) + AVG(ask_depth_50bps::numeric)) as total_depth_50bps,
-            (AVG(bid_depth_100bps::numeric) + AVG(ask_depth_100bps::numeric)) as total_depth_100bps,
-            AVG(impactpxs_bid::numeric) as impact_px_bid,
-            AVG(impactpxs_ask::numeric) as impact_px_ask,
-            AVG(best_bid::numeric) as best_bid,
-            AVG(best_ask::numeric) as best_ask,
-            AVG(spread::numeric) as spread,
-            AVG(spread::numeric) as spread_pct,
-            AVG(dayntlvlm::numeric) as volume_24h,
-            null as total_depth_5pct,
-            null as total_depth_10pct,
-            AVG(premium::numeric) as premium,
-            MIN(coin) as coin
-          FROM ${fullTableName}
-          WHERE coin = $1 
-            AND timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '7 days') * 1000
-          GROUP BY (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
-                   (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 30) * 30) * INTERVAL '1 minute')
-        )
-        SELECT * FROM time_buckets
+        SELECT 
+          EXTRACT(EPOCH FROM (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
+            (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute')) * 1000 as timestamp,
+          AVG(markpx::numeric) as mark_price,
+          AVG(oraclepx::numeric) as oracle_price,
+          AVG(midpx::numeric) as mid_price,
+          AVG(funding::numeric) as funding_rate_pct,
+          AVG(markpx::numeric * openinterest::numeric) as open_interest,
+          AVG(bid_depth_5bps::numeric) as bid_depth_5bps,
+          AVG(ask_depth_5bps::numeric) as ask_depth_5bps,
+          AVG(bid_depth_10bps::numeric) as bid_depth_10bps,
+          AVG(ask_depth_10bps::numeric) as ask_depth_10bps,
+          AVG(bid_depth_50bps::numeric) as bid_depth_50bps,
+          AVG(ask_depth_50bps::numeric) as ask_depth_50bps,
+          AVG(bid_depth_100bps::numeric) as bid_depth_100bps,
+          AVG(ask_depth_100bps::numeric) as ask_depth_100bps,
+          (AVG(bid_depth_5bps::numeric) + AVG(ask_depth_5bps::numeric)) as total_depth_5bps,
+          (AVG(bid_depth_10bps::numeric) + AVG(ask_depth_10bps::numeric)) as total_depth_10bps,
+          (AVG(bid_depth_50bps::numeric) + AVG(ask_depth_50bps::numeric)) as total_depth_50bps,
+          (AVG(bid_depth_100bps::numeric) + AVG(ask_depth_100bps::numeric)) as total_depth_100bps,
+          AVG(impactpxs_bid::numeric) as impact_px_bid,
+          AVG(impactpxs_ask::numeric) as impact_px_ask,
+          AVG(best_bid::numeric) as best_bid,
+          AVG(best_ask::numeric) as best_ask,
+          AVG(spread::numeric) as spread,
+          AVG(spread::numeric) as spread_pct,
+          MAX(dayntlvlm::numeric) as volume_24h,
+          AVG(premium::numeric) as premium,
+          MIN(coin) as coin,
+          null as bid_depth_5pct,
+          null as ask_depth_5pct,
+          null as bid_depth_10pct,
+          null as ask_depth_10pct,
+          null as bid_depth_25pct,
+          null as ask_depth_25pct,
+          null as total_depth_5pct,
+          null as total_depth_10pct
+        FROM ${fullTableName}
+        WHERE coin = $1
+        GROUP BY (DATE_TRUNC('hour', TO_TIMESTAMP(timestamp / 1000)) + 
+                 (FLOOR(EXTRACT(MINUTE FROM TO_TIMESTAMP(timestamp / 1000)) / 10) * 10) * INTERVAL '1 minute')
         ORDER BY timestamp ASC
-        LIMIT 2000
       `
       if (coin) values.push(coin)
+      console.log(`Time filter: ALL TIME (no time restriction) with 10-minute aggregation`)
     } else if (timeWindow === '1d') {
       // For 1-day data, use 2-minute aggregation to ensure we get the full 24 hours with good balance of detail and performance
       query = `
@@ -182,7 +178,7 @@ export async function GET(request: NextRequest) {
             AVG(best_ask::numeric) as best_ask,
             AVG(spread::numeric) as spread,
             AVG(spread::numeric) as spread_pct,
-            AVG(dayntlvlm::numeric) as volume_24h,
+            (ARRAY_AGG(dayntlvlm::numeric ORDER BY timestamp DESC))[1] as volume_24h,
             null as total_depth_5pct,
             null as total_depth_10pct,
             AVG(premium::numeric) as premium,
@@ -199,42 +195,68 @@ export async function GET(request: NextRequest) {
       if (coin) values.push(coin)
       console.log(`Time filter: last 24 hours with 2-minute aggregation`)
     } else {
-      // For 1-hour view, get raw data (should be manageable)
+      // For 1-hour view, use 1-minute aggregation for better granularity
       query = `
-        SELECT 
-          id, timestamp, coin,
-          markpx as mark_price, oraclepx as oracle_price, midpx as mid_price,
-          best_bid, best_ask, spread, spread as spread_pct,
-          funding as funding_rate_pct, (markpx::numeric * openinterest::numeric) as open_interest, dayntlvlm as volume_24h,
-          bid_depth_5bps, ask_depth_5bps, (bid_depth_5bps + ask_depth_5bps) as total_depth_5bps,
-          bid_depth_10bps, ask_depth_10bps, (bid_depth_10bps + ask_depth_10bps) as total_depth_10bps,
-          bid_depth_50bps, ask_depth_50bps, (bid_depth_50bps + ask_depth_50bps) as total_depth_50bps,
-          bid_depth_100bps, ask_depth_100bps, (bid_depth_100bps + ask_depth_100bps) as total_depth_100bps,
-          null as bid_depth_5pct, null as ask_depth_5pct, null as total_depth_5pct,
-          null as bid_depth_10pct, null as ask_depth_10pct, null as total_depth_10pct,
-          null as bid_depth_25pct, null as ask_depth_25pct, null as total_depth_25pct,
-          impactpxs_bid as impact_px_bid, impactpxs_ask as impact_px_ask, premium
-        FROM ${fullTableName}
-        WHERE TO_TIMESTAMP(timestamp / 1000) >= NOW() - INTERVAL '1 hour'
-          AND coin = $1
+        WITH time_buckets AS (
+          SELECT 
+            EXTRACT(EPOCH FROM DATE_TRUNC('minute', TO_TIMESTAMP(timestamp / 1000))) * 1000 as timestamp,
+            AVG(markpx::numeric) as mark_price,
+            AVG(oraclepx::numeric) as oracle_price,
+            AVG(midpx::numeric) as mid_price,
+            AVG(funding::numeric) as funding_rate_pct,
+            AVG(markpx::numeric * openinterest::numeric) as open_interest,
+            AVG(bid_depth_5bps::numeric) as bid_depth_5bps,
+            AVG(ask_depth_5bps::numeric) as ask_depth_5bps,
+            AVG(bid_depth_10bps::numeric) as bid_depth_10bps,
+            AVG(ask_depth_10bps::numeric) as ask_depth_10bps,
+            AVG(bid_depth_50bps::numeric) as bid_depth_50bps,
+            AVG(ask_depth_50bps::numeric) as ask_depth_50bps,
+            AVG(bid_depth_100bps::numeric) as bid_depth_100bps,
+            AVG(ask_depth_100bps::numeric) as ask_depth_100bps,
+            null as bid_depth_5pct,
+            null as ask_depth_5pct,
+            null as bid_depth_10pct,
+            null as ask_depth_10pct,
+            null as bid_depth_25pct,
+            null as ask_depth_25pct,
+            (AVG(bid_depth_5bps::numeric) + AVG(ask_depth_5bps::numeric)) as total_depth_5bps,
+            (AVG(bid_depth_10bps::numeric) + AVG(ask_depth_10bps::numeric)) as total_depth_10bps,
+            (AVG(bid_depth_50bps::numeric) + AVG(ask_depth_50bps::numeric)) as total_depth_50bps,
+            (AVG(bid_depth_100bps::numeric) + AVG(ask_depth_100bps::numeric)) as total_depth_100bps,
+            AVG(impactpxs_bid::numeric) as impact_px_bid,
+            AVG(impactpxs_ask::numeric) as impact_px_ask,
+            AVG(best_bid::numeric) as best_bid,
+            AVG(best_ask::numeric) as best_ask,
+            AVG(spread::numeric) as spread,
+            AVG(spread::numeric) as spread_pct,
+            (ARRAY_AGG(dayntlvlm::numeric ORDER BY timestamp DESC))[1] as volume_24h,
+            null as total_depth_5pct,
+            null as total_depth_10pct,
+            AVG(premium::numeric) as premium,
+            MIN(coin) as coin
+          FROM ${fullTableName}
+          WHERE TO_TIMESTAMP(timestamp / 1000) >= NOW() - INTERVAL '1 hour'
+            AND coin = $1
+          GROUP BY DATE_TRUNC('minute', TO_TIMESTAMP(timestamp / 1000))
+        )
+        SELECT * FROM time_buckets
+        ORDER BY timestamp ASC
       `
       
       // Add coin parameter
       values.push(coin)
-      
-      query += ' ORDER BY timestamp ASC'
-      query += ` LIMIT ${limit} OFFSET ${offset}`
-      console.log(`Time filter: last 1 hour`)
+      console.log(`Time filter: last 1 hour with 1-minute aggregation`)
     }
     
     console.log(`Executing query for timeWindow: ${timeWindow}`)
     console.log('Query:', query.substring(0, 200) + '...')
     console.log('Values:', values)
     
-    // Add timeout wrapper for the query
+    // Add timeout wrapper for the query (longer timeout for all-time queries)
     const queryPromise = client.query(query, values)
+    const timeoutDuration = isAllTime ? 30000 : 10000 // 30s for all-time, 10s for others
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout after 25 seconds')), 25000)
+      setTimeout(() => reject(new Error(`Query timeout after ${timeoutDuration/1000} seconds`)), timeoutDuration)
     })
     
     const result = await Promise.race([queryPromise, timeoutPromise]) as any
@@ -290,22 +312,17 @@ export async function GET(request: NextRequest) {
           .sort()
         
         if (timestamps.length > 0) {
-          const first = new Date(Number(timestamps[0]))
-          const last = new Date(Number(timestamps[timestamps.length - 1]))
+          const firstTimestamp = new Date(processedData[0].timestamp)
+          const lastTimestamp = new Date(processedData[processedData.length - 1].timestamp)
+          const timeSpanHours = (processedData[processedData.length - 1].timestamp - processedData[0].timestamp) / (1000 * 60 * 60)
+          const timeSpanDays = timeSpanHours / 24
           
-          if (!isNaN(first.getTime()) && !isNaN(last.getTime())) {
-            const now = new Date()
-            const hoursDiff = (now.getTime() - first.getTime()) / (1000 * 60 * 60)
-            const totalHours = (last.getTime() - first.getTime()) / (1000 * 60 * 60)
-            
-            console.log(`[${timeWindow}] Time range: ${first.toISOString()} to ${last.toISOString()}`)
-            console.log(`[${timeWindow}] Data spans ${totalHours.toFixed(1)} hours`)
-            console.log(`[${timeWindow}] Oldest data is ${hoursDiff.toFixed(1)} hours ago from now`)
-            
-            // Warning if 1d is returning less than expected
-            if (timeWindow === '1d' && hoursDiff < 20) {
-              console.warn(`[WARNING] 1d query only returned ${hoursDiff.toFixed(1)} hours of data, expected ~24 hours`)
-            }
+          console.log(`[${timeWindow}] Time range: ${firstTimestamp.toISOString()} to ${lastTimestamp.toISOString()}`)
+          console.log(`[${timeWindow}] Data spans ${timeSpanHours.toFixed(1)} hours (${timeSpanDays.toFixed(1)} days)`)
+          console.log(`[${timeWindow}] Oldest data is ${((Date.now() - processedData[0].timestamp) / (1000 * 60 * 60)).toFixed(1)} hours ago from now`)
+          
+          if (isAllTime) {
+            console.log(`[${timeWindow}] 📊 ALL TIME DATA: Fetched complete history from ${firstTimestamp.toISOString().split('T')[0]} to ${lastTimestamp.toISOString().split('T')[0]}`)
           }
         }
       } catch (err) {

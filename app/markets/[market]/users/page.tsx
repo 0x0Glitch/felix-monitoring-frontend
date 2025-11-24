@@ -4,10 +4,14 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import MarketDropdown from "@/components/MarketDropdown";
+import TopMetricsBar from "@/components/TopMetricsBar";
+import PositionsTable from "@/components/PositionsTable";
+import LiquidationChart from "@/components/LiquidationChart";
 
-const PositionsTable = dynamic(() => import("@/components/PositionsTable"), { ssr: false });
-const LiquidationChart = dynamic(() => import("@/components/LiquidationChart"), { ssr: false });
+const PositionsTableDynamic = dynamic(() => import("@/components/PositionsTable"), { ssr: false });
+const LiquidationChartDynamic = dynamic(() => import("@/components/LiquidationChart"), { ssr: false });
 
 interface PositionData {
   positions: any[];
@@ -32,44 +36,64 @@ export default function UsersPage({ params: paramsPromise }: { params: Promise<{
   const [liquidationLoading, setLiquidationLoading] = useState(true);
   const [positionsError, setPositionsError] = useState<string | null>(null);
   const [liquidationError, setLiquidationError] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (isInitial = false) => {
       try {
-        setPositionsLoading(true);
+        // Only show loading on initial load, not on auto-refresh
+        if (isInitial) {
+          setPositionsLoading(true);
+        }
         const response = await fetch(`/api/markets/${encodeURIComponent(market)}/positions`);
         if (!response.ok) throw new Error("Failed to fetch positions");
         const data = await response.json();
         setPositionsData(data);
+        setPositionsError(null);
       } catch (error: any) {
         setPositionsError(error.message);
       } finally {
-        setPositionsLoading(false);
+        if (isInitial) {
+          setPositionsLoading(false);
+          setIsInitialLoad(false);
+        }
       }
     };
-    fetchData();
+    
+    // Initial fetch
+    fetchData(true);
 
-    const interval = setInterval(fetchData, 30000);
+    // Auto-refresh every 30 seconds (silent updates)
+    const interval = setInterval(() => fetchData(false), 30000);
     return () => clearInterval(interval);
   }, [market]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (isInitial = false) => {
       try {
-        setLiquidationLoading(true);
+        // Only show loading on initial load, not on auto-refresh
+        if (isInitial) {
+          setLiquidationLoading(true);
+        }
         const response = await fetch(`/api/markets/${encodeURIComponent(market)}/liquidations`);
         if (!response.ok) throw new Error("Failed to fetch liquidations");
         const data = await response.json();
         setLiquidationData(data);
+        setLiquidationError(null);
       } catch (error: any) {
         setLiquidationError(error.message);
       } finally {
-        setLiquidationLoading(false);
+        if (isInitial) {
+          setLiquidationLoading(false);
+        }
       }
     };
-    fetchData();
+    
+    // Initial fetch
+    fetchData(true);
 
-    const interval = setInterval(fetchData, 30000);
+    // Auto-refresh every 30 seconds (silent updates)
+    const interval = setInterval(() => fetchData(false), 30000);
     return () => clearInterval(interval);
   }, [market]);
 
@@ -83,15 +107,35 @@ export default function UsersPage({ params: paramsPromise }: { params: Promise<{
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       {/* Top Navigation Bar */}
-      <div className="bg-[#0a0a0a] border-b border-gray-800 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          {/* Left: Dropdown */}
-          <div className="flex items-center gap-4">
-            <MarketDropdown currentMarket={market} isInNavigation={false} />
+      <div className="bg-[#0a0a0a] border-b border-gray-900 py-4">
+        <div className="flex items-center justify-between">
+          {/* Left: Anthias Branding and Market Data */}
+          <div className="flex items-center gap-8 pl-4">
+            {/* Anthias Branding */}
+            <div className="flex items-center gap-2">
+              <Image 
+                src="/logos/Anthias.png" 
+                alt="Anthias" 
+                width={28} 
+                height={28}
+                className="object-contain"
+                priority
+                unoptimized
+              />
+              <span className="text-gray-500 text-xs font-mono uppercase tracking-wider">
+                Anthias Labs
+              </span>
+            </div>
+            
+            {/* Market Selector and Metrics */}
+            <div className="flex items-center gap-6">
+              <MarketDropdown currentMarket={market} isInNavigation={false} />
+              <TopMetricsBar market={market} />
+            </div>
           </div>
           
           {/* Right: Navigation Tabs */}
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-1 pr-4">
             <Link
               href={`/markets/${encodedMarket}`}
               className={`px-6 py-2.5 text-sm font-medium transition-all ${

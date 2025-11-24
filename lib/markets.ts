@@ -28,18 +28,6 @@ export const AVAILABLE_MARKETS: Market[] = [
     color: "#E82127"
   },
   {
-    id: "xyz:XYZ100",
-    name: "XYZ100",
-    dex: "xyz",
-    symbol: "XYZ100",
-    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
-    marketTable: "xyz_xyz100_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
-    userPositionsTable: "xyz_xyz100_positions",
-    logo: "xyz",
-    color: "#6366F1"
-  },
-  {
     id: "flx:NVDA",
     name: "NVDA",
     dex: "flx",
@@ -49,6 +37,30 @@ export const AVAILABLE_MARKETS: Market[] = [
     userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "flx_nvda_positions",
     logo: "nvidia",
+    color: "#76B900"
+  },
+  {
+    id: "flx:CRCL",
+    name: "CRCL",
+    dex: "flx",
+    symbol:"CRCL",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_crcl_data",
+    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_crcl_positions",
+    logo: "crcl",
+    color: "#76B900"
+  },
+  {
+    id: "flx:COIN",
+    name: "COIN",
+    dex: "flx",
+    symbol:"COIN",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_coin_data",
+    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_coin_positions",
+    logo: "coin",
     color: "#76B900"
   }
 ];

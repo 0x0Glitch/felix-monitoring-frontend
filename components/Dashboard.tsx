@@ -5,6 +5,7 @@ import { LiquidityChart } from '@/components/charts/LiquidityChart'
 import { FundingRateChart } from '@/components/charts/FundingRateChart'
 import { OpenInterestChart } from '@/components/charts/OpenInterestChart'
 import { PriceChart } from '@/components/charts/PriceChart'
+import { VolumeChart } from '@/components/charts/VolumeChart'
 import type { TimeWindow } from '@/components/TimeWindowSelector'
 import { ChartSkeleton } from '@/components/ChartSkeleton'
 import { fetchMarketData, formatChartData } from '@/lib/data-fetchers-new'
@@ -16,7 +17,7 @@ interface DashboardProps {
 }
 
 export function Dashboard({ coin }: DashboardProps) {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<{[key: string]: any[]}>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastFetched, setLastFetched] = useState<Date | null>(null)
@@ -24,25 +25,41 @@ export function Dashboard({ coin }: DashboardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [isClient, setIsClient] = useState(false)
+  const [currentTimeWindow, setCurrentTimeWindow] = useState<TimeWindow>('1d')
+  
+  // Individual time windows for each chart
+  const [priceTimeWindow, setPriceTimeWindow] = useState<TimeWindow>('1d')
+  const [bidLiquidityTimeWindow, setBidLiquidityTimeWindow] = useState<TimeWindow>('1d')
+  const [askLiquidityTimeWindow, setAskLiquidityTimeWindow] = useState<TimeWindow>('1d')
+  const [fundingTimeWindow, setFundingTimeWindow] = useState<TimeWindow>('1d')
+  const [oiTimeWindow, setOiTimeWindow] = useState<TimeWindow>('1d')
+  const [volumeTimeWindow, setVolumeTimeWindow] = useState<TimeWindow>('1d')
+  
+  // Track which time windows are currently loading
+  const [loadingWindows, setLoadingWindows] = useState<Set<TimeWindow>>(new Set())
 
-  const loadData = useCallback(async (showLoadingState = true, forceRefresh = false) => {
+  const loadData = useCallback(async (showLoadingState = true, forceRefresh = false, timeWindow: TimeWindow = 'all', showOverlay = false) => {
     // Only show full loading state on initial load or manual refresh
     if (showLoadingState) {
       setLoading(true)
+    } else if (showOverlay) {
+      // Mark this specific time window as loading (only for user-initiated actions)
+      setLoadingWindows(prev => new Set(prev).add(timeWindow))
     }
+    // If neither flag is true, the update happens silently (for auto-refresh)
     setError(null)
     
     try {
-      // Always fetch all data and let individual charts filter it
-      const result = await fetchMarketData('all', coin, forceRefresh)
+      // Fetch data with specified time window for proper server-side aggregation
+      const result = await fetchMarketData(timeWindow, coin, forceRefresh)
       
       if (result.data.length === 0) {
         setError('No data available for the selected time period')
-        setData([])
+        setData(prev => ({ ...prev, [timeWindow]: [] }))
         setIsSampled(false)
       } else {
         const formattedData = formatChartData(result.data)
-        setData(formattedData)
+        setData(prev => ({ ...prev, [timeWindow]: formattedData }))
         setLastFetched(new Date())
         setIsSampled(result.sampled)
       }
@@ -61,30 +78,36 @@ export function Dashboard({ coin }: DashboardProps) {
       }
       
       setError(errorMessage)
-      
-      // Keep existing data on error to maintain UI stability
-      if (showLoadingState && data.length === 0) {
-        setData([])
-      }
     } finally {
       setLoading(false)
       setIsRefreshing(false)
+      // Remove this time window from loading set
+      setLoadingWindows(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(timeWindow)
+        return newSet
+      })
     }
   }, [coin])
 
-  // Load data when component mounts
+  // Load data when component mounts or time window changes
   useEffect(() => {
-    loadData(true, true)
-  }, [loadData])
+    const timeoutId = setTimeout(() => {
+      loadData(true, true, currentTimeWindow)
+    }, 0)
+    return () => clearTimeout(timeoutId)
+  }, [currentTimeWindow, coin, loadData])
 
-  // Auto-refresh every 20 seconds
+  // Auto-refresh every 30 seconds (increased from 20s to reduce load)
   useEffect(() => {
     const interval = setInterval(() => {
-      loadData(false, true) // Refresh without showing loading state
-    }, 20000) // 20 seconds
+      if (!loading && !isRefreshing) {
+        loadData(false, true, currentTimeWindow)
+      }
+    }, 30000) // 30 seconds
 
     return () => clearInterval(interval)
-  }, [loadData])
+  }, [currentTimeWindow, loading, isRefreshing, loadData])
 
   // Initialize client-side state
   useEffect(() => {
@@ -105,7 +128,7 @@ export function Dashboard({ coin }: DashboardProps) {
 
   const handleRefresh = () => {
     setIsRefreshing(true)
-    loadData(false, true) // Force refresh, bypass cache
+    loadData(false, true, currentTimeWindow) // Force refresh, bypass cache
   }
 
   return (
@@ -135,28 +158,135 @@ export function Dashboard({ coin }: DashboardProps) {
         {/* Charts Stack - Full Width */}
         <div className="space-y-4">
           {/* Price Chart */}
-          <div className="bg-[#0a0a0a] border border-gray-900 p-6">
-            {loading ? <ChartSkeleton /> : <PriceChart data={data} />}
+          <div className="bg-[#0a0a0a] border border-gray-900 p-6 relative">
+            {loading && !data[priceTimeWindow] ? <ChartSkeleton /> : (
+              <>
+                {loadingWindows.has(priceTimeWindow) && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded backdrop-blur-sm">
+                    <div className="flex items-center gap-2 bg-gray-900/90 px-4 py-2 rounded-lg border border-gray-700">
+                      <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
+                      <span className="text-white text-sm font-medium">Loading data...</span>
+                    </div>
+                  </div>
+                )}
+                <PriceChart data={data[priceTimeWindow] || []} onTimeWindowChange={(window) => {
+                  setPriceTimeWindow(window)
+                  if (!data[window]) {
+                    loadData(false, true, window, true) // showOverlay=true for user action
+                  }
+                }} defaultTimeWindow={priceTimeWindow} />
+              </>
+            )}
           </div>
 
           {/* Bid Side Liquidity */}
-          <div className="bg-[#0a0a0a] border border-gray-900 p-6">
-            {loading ? <ChartSkeleton /> : <LiquidityChart data={data} side="bid" />}
+          <div className="bg-[#0a0a0a] border border-gray-900 p-6 relative">
+            {loading && !data[bidLiquidityTimeWindow] ? <ChartSkeleton /> : (
+              <>
+                {loadingWindows.has(bidLiquidityTimeWindow) && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded backdrop-blur-sm">
+                    <div className="flex items-center gap-2 bg-gray-900/90 px-4 py-2 rounded-lg border border-gray-700">
+                      <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
+                      <span className="text-white text-sm font-medium">Loading data...</span>
+                    </div>
+                  </div>
+                )}
+                <LiquidityChart data={data[bidLiquidityTimeWindow] || []} side="bid" onTimeWindowChange={(window) => {
+                  setBidLiquidityTimeWindow(window)
+                  if (!data[window]) {
+                    loadData(false, true, window, true) // showOverlay=true for user action
+                  }
+                }} defaultTimeWindow={bidLiquidityTimeWindow} />
+              </>
+            )}
           </div>
 
           {/* Ask Side Liquidity */}
-          <div className="bg-[#0a0a0a] border border-gray-900 p-6">
-            {loading ? <ChartSkeleton /> : <LiquidityChart data={data} side="ask" />}
+          <div className="bg-[#0a0a0a] border border-gray-900 p-6 relative">
+            {loading && !data[askLiquidityTimeWindow] ? <ChartSkeleton /> : (
+              <>
+                {loadingWindows.has(askLiquidityTimeWindow) && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded backdrop-blur-sm">
+                    <div className="flex items-center gap-2 bg-gray-900/90 px-4 py-2 rounded-lg border border-gray-700">
+                      <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
+                      <span className="text-white text-sm font-medium">Loading data...</span>
+                    </div>
+                  </div>
+                )}
+                <LiquidityChart data={data[askLiquidityTimeWindow] || []} side="ask" onTimeWindowChange={(window) => {
+                  setAskLiquidityTimeWindow(window)
+                  if (!data[window]) {
+                    loadData(false, true, window, true) // showOverlay=true for user action
+                  }
+                }} defaultTimeWindow={askLiquidityTimeWindow} />
+              </>
+            )}
           </div>
 
           {/* Funding Rate */}
-          <div className="bg-[#0a0a0a] border border-gray-900 p-6">
-            {loading ? <ChartSkeleton /> : <FundingRateChart data={data} />}
+          <div className="bg-[#0a0a0a] border border-gray-900 p-6 relative">
+            {loading && !data[fundingTimeWindow] ? <ChartSkeleton /> : (
+              <>
+                {loadingWindows.has(fundingTimeWindow) && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded backdrop-blur-sm">
+                    <div className="flex items-center gap-2 bg-gray-900/90 px-4 py-2 rounded-lg border border-gray-700">
+                      <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
+                      <span className="text-white text-sm font-medium">Loading data...</span>
+                    </div>
+                  </div>
+                )}
+                <FundingRateChart data={data[fundingTimeWindow] || []} onTimeWindowChange={(window) => {
+                  setFundingTimeWindow(window)
+                  if (!data[window]) {
+                    loadData(false, true, window, true) // showOverlay=true for user action
+                  }
+                }} defaultTimeWindow={fundingTimeWindow} />
+              </>
+            )}
           </div>
 
           {/* Open Interest */}
-          <div className="bg-[#0a0a0a] border border-gray-900 p-6">
-            {loading ? <ChartSkeleton /> : <OpenInterestChart data={data} />}
+          <div className="bg-[#0a0a0a] border border-gray-900 p-6 relative">
+            {loading && !data[oiTimeWindow] ? <ChartSkeleton /> : (
+              <>
+                {loadingWindows.has(oiTimeWindow) && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded backdrop-blur-sm">
+                    <div className="flex items-center gap-2 bg-gray-900/90 px-4 py-2 rounded-lg border border-gray-700">
+                      <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
+                      <span className="text-white text-sm font-medium">Loading data...</span>
+                    </div>
+                  </div>
+                )}
+                <OpenInterestChart data={data[oiTimeWindow] || []} onTimeWindowChange={(window) => {
+                  setOiTimeWindow(window)
+                  if (!data[window]) {
+                    loadData(false, true, window, true) // showOverlay=true for user action
+                  }
+                }} defaultTimeWindow={oiTimeWindow} />
+              </>
+            )}
+          </div>
+
+          {/* 24h Volume Variation */}
+          <div className="bg-[#0a0a0a] border border-gray-900 p-6 relative">
+            {loading && !data[volumeTimeWindow] ? <ChartSkeleton /> : (
+              <>
+                {loadingWindows.has(volumeTimeWindow) && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded backdrop-blur-sm">
+                    <div className="flex items-center gap-2 bg-gray-900/90 px-4 py-2 rounded-lg border border-gray-700">
+                      <RefreshCw className="w-4 h-4 text-emerald-400 animate-spin" />
+                      <span className="text-white text-sm font-medium">Loading data...</span>
+                    </div>
+                  </div>
+                )}
+                <VolumeChart data={data[volumeTimeWindow] || []} onTimeWindowChange={(window) => {
+                  setVolumeTimeWindow(window)
+                  if (!data[window]) {
+                    loadData(false, true, window, true) // showOverlay=true for user action
+                  }
+                }} defaultTimeWindow={volumeTimeWindow} />
+              </>
+            )}
           </div>
         </div>
 

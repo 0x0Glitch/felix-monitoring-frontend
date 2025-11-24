@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import Image from "next/image";
 import { ChevronDown, Search } from "lucide-react";
 import { AVAILABLE_MARKETS, getMarketsByCategory, getMarketPairName, type Market } from "@/lib/markets";
 import MarketLogo from "@/components/MarketLogo";
@@ -131,8 +132,21 @@ export default function MarketDropdown({ currentMarket, isInNavigation = false }
               // Show all markets grouped by DEX
               Object.entries(marketsByCategory).map(([dex, markets]) => (
                 <div key={dex}>
-                  <div className="px-4 py-2 text-xs text-gray-500 uppercase tracking-wider">
-                    {dex.toUpperCase()}
+                  <div className="px-4 py-2 text-xs text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    {dex === 'flx' && (
+                      <Image 
+                        src="/logos/felix.png" 
+                        alt="Felix" 
+                        width={40} 
+                        height={40}
+                        className="object-contain rounded-full"
+                        unoptimized
+                        priority
+                      />
+                    )}
+                    <span>
+                      {dex.toUpperCase()}
+                    </span>
                   </div>
                   {markets.map(renderMarketItem)}
                 </div>

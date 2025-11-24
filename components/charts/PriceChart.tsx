@@ -13,34 +13,14 @@ interface PriceChartProps {
   defaultTimeWindow?: TimeWindow
 }
 
-export function PriceChart({ data }: PriceChartProps) {
-  const [timeWindow, setTimeWindow] = useState<TimeWindow>('1d')
+export function PriceChart({ data, onTimeWindowChange, defaultTimeWindow = '1d' }: PriceChartProps) {
+  const [timeWindow, setTimeWindow] = useState<TimeWindow>(defaultTimeWindow)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
-  // Filter data based on selected time window
+  // Use all data since server-side aggregation provides the right granularity
   const filteredData = useMemo(() => {
-    if (!data || data.length === 0) return data
-    
-    const now = new Date()
-    let cutoffTime: Date
-    
-    switch (timeWindow) {
-      case '1h':
-        cutoffTime = new Date(now.getTime() - 60 * 60 * 1000) // 1 hour ago
-        break
-      case '1d':
-        cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000) // 1 day ago
-        break
-      case 'all':
-      default:
-        return data // Return all data
-    }
-    
-    return data.filter(item => {
-      const itemTime = new Date(item.timestamp)
-      return itemTime >= cutoffTime
-    })
-  }, [data, timeWindow])
+    return data || []
+  }, [data])
 
   const timeWindows: { value: TimeWindow; label: string }[] = [
     { value: '1h', label: 'Past Hour' },
@@ -51,7 +31,10 @@ export function PriceChart({ data }: PriceChartProps) {
   const handleTimeChange = (window: TimeWindow) => {
     setTimeWindow(window)
     setIsDropdownOpen(false)
-    // Each chart maintains its own independent time window
+    // Notify parent component of time window change
+    if (onTimeWindowChange) {
+      onTimeWindowChange(window)
+    }
   }
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
