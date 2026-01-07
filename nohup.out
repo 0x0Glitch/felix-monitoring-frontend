@@ -1,0 +1,39 @@
+
+> market-metrics-dashboard@0.1.0 dev
+> next dev --webpack
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   ▲ Next.js 16.0.1 (webpack)
+   - Local:        http://localhost:3002
+   - Network:      http://172.31.35.50:3002
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 1342ms
+Using dynamic table for market flx:COIN: market_data.flx_coin_data
+Time filter: last 1 hour with 1-minute aggregation
+Executing query for timeWindow: 1h
+Query: 
+        WITH time_buckets AS (
+          SELECT 
+            EXTRACT(EPOCH FROM DATE_TRUNC('minute', TO_TIMESTAMP(timestamp / 1000))) * 1000 as timestamp,
+            AVG(markpx::numeric) as mark_pri...
+Values: [ 'flx:COIN' ]
+[1h] Returning 61 records
+[1h] Could not parse timestamps for debugging
+ GET /api/market-data?timeWindow=1h&coin=flx%3ACOIN 200 in 2.8s (compile: 1036ms, render: 1733ms)
+ ⚠ Blocked cross-origin request from 18.179.206.166 to /_next/* resource. To allow this, configure "allowedDevOrigins" in next.config
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+[Liquidations API] Fetching data for market: flx:COIN
+[Liquidations API] Using market table: market_data.flx_coin_data
+[Liquidations API] Using positions table: user_positions.flx_coin_positions
+[Positions API] Fetching positions for market: flx:COIN
+[Positions API] Using table: user_positions.flx_coin_positions
+[Positions API] Table found: user_positions.flx_coin_positions, querying positions...
+[Liquidations API] Table found: user_positions.flx_coin_positions, querying positions...
+[Liquidations API] Found 63 positions
+[Positions API] Found 63 positions
+ GET /api/markets/flx%3ACOIN/liquidations 200 in 2.1s (compile: 669ms, render: 1398ms)
+ GET /api/markets/flx%3ACOIN/positions 200 in 2.5s (compile: 960ms, render: 1498ms)
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[?25h

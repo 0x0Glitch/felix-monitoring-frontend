@@ -13,6 +13,7 @@ interface MarketStats {
   longCount: number;
   shortCount: number;
   totalCount: number;
+  volume24h: number;
 }
 
 interface MarketData {
@@ -29,14 +30,35 @@ export default function Home() {
   // Fetch data for all markets
   useEffect(() => {
     const fetchAllMarkets = async () => {
-      setLoading(true);
+      // Don't clear old data - keep it visible while fetching new data
       const data: MarketData = {};
 
-      for (const market of AVAILABLE_MARKETS) {
+      // Fetch all markets in parallel with controlled concurrency
+      const fetchMarketData = async (market: typeof AVAILABLE_MARKETS[0]) => {
         try {
-          const response = await fetch(`/api/markets/${encodeURIComponent(market.id)}/positions`);
-          if (response.ok) {
-            const result = await response.json();
+          // Fetch both endpoints in parallel for each market
+          const [positionsResponse, marketDataResponse] = await Promise.all([
+            fetch(`/api/markets/${encodeURIComponent(market.id)}/positions`).catch(err => {
+              console.error(`Error fetching positions for ${market.id}:`, err);
+              return null;
+            }),
+            fetch(`/api/market-data?timeWindow=1h&coin=${encodeURIComponent(market.id)}`).catch(err => {
+              console.error(`Error fetching market data for ${market.id}:`, err);
+              return null;
+            })
+          ]);
+
+          let volume24h = 0;
+          if (marketDataResponse?.ok) {
+            const marketResult = await marketDataResponse.json();
+            if (marketResult.success && marketResult.data.length > 0) {
+              const latestData = marketResult.data[marketResult.data.length - 1];
+              volume24h = latestData.volume_24h || 0;
+            }
+          }
+
+          if (positionsResponse?.ok) {
+            const result = await positionsResponse.json();
             const positions = result.positions || [];
 
             let totalNotional = 0;
@@ -48,7 +70,7 @@ export default function Home() {
             positions.forEach((pos: any) => {
               const size = parseFloat(String(pos.position_size || 0));
               const value = Math.abs(parseFloat(String(pos.position_value || 0)));
-              
+
               totalNotional += value;
               if (size > 0) {
                 longNotional += value;
@@ -59,38 +81,58 @@ export default function Home() {
               }
             });
 
-            data[market.id] = {
-              totalNotional,
-              longNotional,
-              shortNotional,
-              longCount,
-              shortCount,
-              totalCount: positions.length
+            return {
+              marketId: market.id,
+              stats: {
+                totalNotional,
+                longNotional,
+                shortNotional,
+                longCount,
+                shortCount,
+                totalCount: positions.length,
+                volume24h
+              }
             };
           }
         } catch (error) {
           console.error(`Error fetching data for ${market.id}:`, error);
         }
+        return null;
+      };
+
+      // Process markets in batches of 3 to avoid overwhelming the database
+      const batchSize = 3;
+      for (let i = 0; i < AVAILABLE_MARKETS.length; i += batchSize) {
+        const batch = AVAILABLE_MARKETS.slice(i, i + batchSize);
+        const results = await Promise.all(batch.map(fetchMarketData));
+
+        results.forEach(result => {
+          if (result) {
+            data[result.marketId] = result.stats;
+          }
+        });
       }
 
+      // Only update state after all data is fetched
       setMarketData(data);
       setLoading(false);
     };
 
+    // Initial load
     fetchAllMarkets();
-    
+
     // Refresh every 30 seconds
     const interval = setInterval(fetchAllMarkets, 30000);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Filter markets based on search
   const filteredMarkets = searchQuery
-    ? AVAILABLE_MARKETS.filter(market => 
-        market.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        market.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        market.dex.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? AVAILABLE_MARKETS.filter(market =>
+      market.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      market.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      market.dex.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : AVAILABLE_MARKETS;
 
   const handleRowClick = (marketId: string) => {
@@ -110,9 +152,9 @@ export default function Home() {
     { totalNotional: 0, longNotional: 0, shortNotional: 0, longCount: 0, shortCount: 0, totalCount: 0 }
   );
 
-  const lsRatio = globalStats.longNotional > 0 && globalStats.shortNotional > 0
-    ? ((globalStats.longNotional - globalStats.shortNotional) / globalStats.longNotional * 100)
-    : 0;
+  const lsRatio = globalStats.longCount > 0 && globalStats.shortCount > 0
+    ? (globalStats.longCount / (globalStats.longCount + globalStats.shortCount) * 100)
+    : 50;
   const globalBias = globalStats.longNotional > globalStats.shortNotional ? 'LONG' : 'SHORT';
   const biasColor = globalBias === 'LONG' ? 'text-emerald-400' : 'text-red-400';
 
@@ -190,25 +232,22 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setFilter('ALL')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                filter === 'ALL' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-500 hover:text-gray-300'
-              }`}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${filter === 'ALL' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-500 hover:text-gray-300'
+                }`}
             >
               ALL
             </button>
             <button
               onClick={() => setFilter('LONG')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                filter === 'LONG' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-500 hover:text-gray-300'
-              }`}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${filter === 'LONG' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-500 hover:text-gray-300'
+                }`}
             >
               LONG
             </button>
             <button
               onClick={() => setFilter('SHORT')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                filter === 'SHORT' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-500 hover:text-gray-300'
-              }`}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${filter === 'SHORT' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-gray-500 hover:text-gray-300'
+                }`}
             >
               SHORT
             </button>
@@ -248,12 +287,13 @@ export default function Home() {
                 shortNotional: 0,
                 longCount: 0,
                 shortCount: 0,
-                totalCount: 0
+                totalCount: 0,
+                volume24h: 0
               };
-              
+
               const marketBias = stats.longNotional > stats.shortNotional ? 'LONG' : 'SHORT';
-              const lsRatioMarket = stats.longNotional > 0 && stats.shortNotional > 0
-                ? (stats.longNotional / (stats.longNotional + stats.shortNotional) * 100)
+              const lsRatioMarket = stats.longCount > 0 && stats.shortCount > 0
+                ? (stats.longCount / (stats.longCount + stats.shortCount) * 100)
                 : 50;
 
               return (
@@ -267,26 +307,25 @@ export default function Home() {
                     <span className="font-mono-data font-medium text-white">{getMarketPairName(market)}</span>
                   </div>
                   <div className="col-span-2 font-mono-data text-sm text-gray-300 text-right">
-                    {loading ? '...' : formatCurrency(stats.totalNotional * 0.1)}
+                    {formatCurrency(stats.volume24h)}
                   </div>
                   <div className="col-span-2 font-mono-data text-sm text-white text-right">
-                    {loading ? '...' : formatCurrency(stats.totalNotional)}
+                    {formatCurrency(stats.totalNotional)}
                   </div>
                   <div className="col-span-2 flex items-center justify-center">
-                    <span className={`font-mono-data text-sm font-medium ${
-                      marketBias === 'LONG' ? 'text-emerald-400' : 'text-red-400'
-                    }`}>
-                      {loading ? '...' : marketBias}
+                    <span className={`font-mono-data text-sm font-medium ${marketBias === 'LONG' ? 'text-emerald-400' : 'text-red-400'
+                      }`}>
+                      {marketBias}
                     </span>
                   </div>
                   <div className="col-span-1 font-mono-data text-sm text-yellow-400 text-right">
-                    {loading ? '...' : `${lsRatioMarket.toFixed(0)}%`}
+                    {`${lsRatioMarket.toFixed(0)}%`}
                   </div>
                   <div className="col-span-2 font-mono-data text-sm text-gray-300 text-right">
-                    {loading ? '...' : `${stats.longCount} / ${stats.shortCount}`}
+                    {`${stats.longCount} / ${stats.shortCount}`}
                   </div>
                   <div className="col-span-1 font-mono-data text-sm text-gray-300 text-right">
-                    {loading ? '...' : formatCurrency(stats.totalNotional)}
+                    {formatCurrency(stats.totalNotional)}
                   </div>
                 </button>
               );

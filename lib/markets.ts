@@ -28,18 +28,6 @@ export const AVAILABLE_MARKETS: Market[] = [
     color: "#E82127"
   },
   {
-    id: "flx:NVDA",
-    name: "NVDA",
-    dex: "flx",
-    symbol: "NVDA",
-    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
-    marketTable: "flx_nvda_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
-    userPositionsTable: "flx_nvda_positions",
-    logo: "nvidia",
-    color: "#76B900"
-  },
-  {
     id: "flx:CRCL",
     name: "CRCL",
     dex: "flx",
@@ -48,7 +36,7 @@ export const AVAILABLE_MARKETS: Market[] = [
     marketTable: "flx_crcl_data",
     userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "flx_crcl_positions",
-    logo: "crcl",
+    logo: "Circle.png",
     color: "#76B900"
   },
   {
@@ -62,7 +50,43 @@ export const AVAILABLE_MARKETS: Market[] = [
     userPositionsTable: "flx_coin_positions",
     logo: "coin",
     color: "#76B900"
-  }
+  },
+  {
+    id: "flx:GOLD",
+    name: "GOLD",
+    dex: "flx",
+    symbol: "GOLD",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_gold_data",
+    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_gold_positions",
+    logo: "goldy",
+    color: "#76B900"
+  },
+  {
+    id: "flx:XMR",
+    name: "XMR",
+    dex: "flx",
+    symbol: "XMR",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_xmr_data",
+    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_xmr_positions",
+    logo: "xmr",
+    color: "#76B900"
+ },
+ {
+    id: "flx:SILVER",
+    name: "SILVER",
+    dex: "flx",
+    symbol: "SILVER",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_silver_data",
+    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_silver_positions",
+    logo: "silver",
+    color: "#76B900"
+ },
 ];
 
 // Helper function to get market configuration by ID
@@ -82,6 +106,7 @@ export function normalizeMarketId(marketId: string): string {
 // Helper function to get table names for a market
 export function getMarketTableNames(marketId: string) {
   const market = getMarketConfig(normalizeMarketId(marketId));
+
   if (!market) {
     // Fallback to default naming convention
     const normalized = normalizeMarketId(marketId);
@@ -89,7 +114,7 @@ export function getMarketTableNames(marketId: string) {
     const tablePrefix = `${dex}_${symbol.toLowerCase()}`;
     
     return {
-      marketTable: `${tablePrefix}_data`,
+      marketTable: `${tablePrefix}_data_lighter`,
       userPositionsTable: `${tablePrefix}_positions`,
       marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
       userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions"
@@ -109,8 +134,9 @@ export function getQuoteCurrency(dex: string): string {
   const quoteCurrencies: Record<string, string> = {
     'flx': 'USDH',
     'xyz': 'USDC',
+    'hl': 'USDC',
   };
-  return quoteCurrencies[dex.toLowerCase()] || 'USD';
+  return quoteCurrencies[dex.toLowerCase()] || 'USDC';
 }
 
 // Get formatted market pair name (e.g., "TSLA-USDH", "BTC-USDC")

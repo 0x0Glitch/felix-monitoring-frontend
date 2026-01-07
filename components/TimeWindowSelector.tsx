@@ -4,7 +4,7 @@ import React from 'react'
 import { cn } from '@/lib/utils'
 import { Clock } from 'lucide-react'
 
-export type TimeWindow = '1h' | '1d' | 'all'
+export type TimeWindow = '1h' | '1d' | '7d' | '30d' | 'all'
 
 interface TimeWindowSelectorProps {
   value: TimeWindow
@@ -12,9 +12,11 @@ interface TimeWindowSelectorProps {
 }
 
 const timeWindows: { value: TimeWindow; label: string }[] = [
-  { value: '1h', label: 'Past Hour' },
-  { value: '1d', label: 'Past Day' },
-  { value: 'all', label: 'All Time' },
+  { value: '1h', label: '1H' },
+  { value: '1d', label: '1D' },
+  { value: '7d', label: '7D' },
+  { value: '30d', label: '30D' },
+  { value: 'all', label: 'All' },
 ]
 
 export function TimeWindowSelector({ value, onChange }: TimeWindowSelectorProps) {

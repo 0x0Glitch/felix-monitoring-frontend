@@ -1,7 +1,7 @@
 import { MarketMetrics } from './supabase'
 import { dataCache } from './cache'
 
-export type TimeWindow = '1h' | '1d' | 'all'
+export type TimeWindow = '1h' | '1d' | '7d' | '30d' | 'all'
 
 export interface FetchResult {
   data: MarketMetrics[]

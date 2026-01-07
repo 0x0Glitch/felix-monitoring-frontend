@@ -30,10 +30,23 @@ export default function MarketLogo({ logo, symbol, color, size = 'md' }: MarketL
   const pixelSize = sizeMap[size];
 
   // Use actual logo images if available
-  if (logo && ['tesla', 'nvidia', 'xyz'].includes(logo)) {
-    // Use PNG for Tesla/NVIDIA, SVG for xyz
-    const logoSrc = logo === 'xyz' ? `/logos/${logo}.svg` : `/logos/${logo}.png`;
-    const fallbackSrc = logo === 'xyz' ? `/logos/${logo}.png` : `/logos/${logo}.svg`;
+  if (logo) {
+    // Determine logo source path
+    let logoSrc: string;
+    let fallbackSrc: string;
+    
+    if (logo.endsWith('.png') || logo.endsWith('.svg')) {
+      // If logo already has extension, use it directly
+      logoSrc = `/logos/${logo}`;
+      // Try alternate format as fallback
+      fallbackSrc = logo.endsWith('.png') 
+        ? `/logos/${logo.replace('.png', '.svg')}`
+        : `/logos/${logo.replace('.svg', '.png')}`;
+    } else {
+      // Legacy format: use PNG by default, SVG for xyz
+      logoSrc = logo === 'xyz' ? `/logos/${logo}.svg` : `/logos/${logo}.png`;
+      fallbackSrc = logo === 'xyz' ? `/logos/${logo}.png` : `/logos/${logo}.svg`;
+    }
     
     return (
       <div className={`${sizeClasses[size]} flex items-center justify-center relative`}>
