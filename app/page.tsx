@@ -27,13 +27,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Fetch data for all markets
+  // Fetch data for all markets with progressive loading
   useEffect(() => {
     const fetchAllMarkets = async () => {
-      // Don't clear old data - keep it visible while fetching new data
-      const data: MarketData = {};
-
-      // Fetch all markets in parallel with controlled concurrency
+      // Progressive loading: fetch and update one market at a time for faster initial render
       const fetchMarketData = async (market: typeof AVAILABLE_MARKETS[0]) => {
         try {
           // Fetch both endpoints in parallel for each market
@@ -100,21 +97,22 @@ export default function Home() {
         return null;
       };
 
-      // Process markets in batches of 3 to avoid overwhelming the database
-      const batchSize = 3;
-      for (let i = 0; i < AVAILABLE_MARKETS.length; i += batchSize) {
-        const batch = AVAILABLE_MARKETS.slice(i, i + batchSize);
-        const results = await Promise.all(batch.map(fetchMarketData));
+      // Fetch all markets in parallel (not in batches) for maximum speed
+      // Connection pooling and caching will handle the load
+      const promises = AVAILABLE_MARKETS.map(async (market) => {
+        const result = await fetchMarketData(market);
+        if (result) {
+          // Update state immediately as each market loads (progressive rendering)
+          setMarketData(prev => ({
+            ...prev,
+            [result.marketId]: result.stats
+          }));
+        }
+        return result;
+      });
 
-        results.forEach(result => {
-          if (result) {
-            data[result.marketId] = result.stats;
-          }
-        });
-      }
-
-      // Only update state after all data is fetched
-      setMarketData(data);
+      // Wait for all to complete, then mark as not loading
+      await Promise.all(promises);
       setLoading(false);
     };
 

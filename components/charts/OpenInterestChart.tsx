@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { ChevronDown } from 'lucide-react'
 import { formatNumber, formatTimestamp } from '@/lib/utils'
 
-type TimeWindow = '1h' | '1d' | 'all'
+type TimeWindow = '1h' | '1d' | '7d' | '30d' | 'all'
 
 interface OpenInterestChartProps {
   data: any[]
@@ -25,6 +25,8 @@ export function OpenInterestChart({ data, onTimeWindowChange, defaultTimeWindow 
   const timeWindows: { value: TimeWindow; label: string }[] = [
     { value: '1h', label: 'Past Hour' },
     { value: '1d', label: 'Past Day' },
+    { value: '7d', label: 'Past 7 Days' },
+    { value: '30d', label: 'Past 30 Days' },
     { value: 'all', label: 'All Time' },
   ]
 

@@ -14,7 +14,7 @@ import {
 import { formatPercentage, formatTimestamp } from '@/lib/utils'
 import { ChevronDown } from 'lucide-react'
 
-type TimeWindow = '1h' | '1d' | 'all'
+type TimeWindow = '1h' | '1d' | '7d' | '30d' | 'all'
 
 interface FundingRateChartProps {
   data: any[]
@@ -34,6 +34,8 @@ export function FundingRateChart({ data, onTimeWindowChange, defaultTimeWindow =
   const timeWindows: { value: TimeWindow; label: string }[] = [
     { value: '1h', label: 'Past Hour' },
     { value: '1d', label: 'Past Day' },
+    { value: '7d', label: 'Past 7 Days' },
+    { value: '30d', label: 'Past 30 Days' },
     { value: 'all', label: 'All Time' },
   ]
 

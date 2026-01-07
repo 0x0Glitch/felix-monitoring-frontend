@@ -7,7 +7,7 @@ interface CacheEntry {
 
 class DataCache {
   private cache: Map<string, CacheEntry> = new Map()
-  private readonly maxAge = 60000 // Cache for 60 seconds
+  private readonly maxAge = 30000 // Cache for 30 seconds (faster updates)
   
   getCacheKey(timeWindow: string, coin?: string): string {
     return `${timeWindow}-${coin || 'none'}`

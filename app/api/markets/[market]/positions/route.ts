@@ -1,20 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Client } from "pg";
-import { MARKET_CONFIG } from "@/lib/config";
+import { getPool } from "@/lib/db";
 import { getMarketTableNames, normalizeMarketId } from "@/lib/markets";
 
-function createClient() {
-  return new Client({
-    connectionString: process.env.NEXT_PUBLIC_DATABASE_URL,
-    ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 5000,
-    statement_timeout: 30000,
-    query_timeout: 30000,
-  });
-}
+// Simple cache for positions data
+const positionsCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 15000; // 15 seconds cache for positions
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   context: { params: Promise<{ market: string }> }
 ) {
   const params = await context.params;
@@ -32,13 +25,22 @@ export async function GET(
   const normalizedMarket = normalizeMarketId(market);
   const { userPositionsSchema, userPositionsTable } = getMarketTableNames(normalizedMarket);
 
-  console.log(`[Positions API] Fetching positions for market: ${normalizedMarket}`);
+  // Check cache first
+  const cacheKey = normalizedMarket;
+  const cached = positionsCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log(`[Positions API] CACHE HIT for ${normalizedMarket}`);
+    return NextResponse.json(cached.data);
+  }
+
+  console.log(`[Positions API] CACHE MISS - Fetching positions for market: ${normalizedMarket}`);
   console.log(`[Positions API] Using table: ${userPositionsSchema}.${userPositionsTable}`);
 
-  const client = createClient();
-  
+  const pool = getPool();
+  let client;
+
   try {
-    await client.connect();
+    client = await pool.connect();
     // Use configured table name
     const tableName = `${userPositionsSchema}.${userPositionsTable}`;
     const tableNameOnly = userPositionsTable;
@@ -96,14 +98,19 @@ export async function GET(
     })
     
     const result = await Promise.race([queryPromise, timeoutPromise]) as any
-    
+
     console.log(`[Positions API] Found ${result.rowCount} positions`);
 
-    return NextResponse.json({
+    const response = {
       positions: result.rows,
       count: result.rowCount || 0,
       timestamp: new Date().toISOString()
-    });
+    };
+
+    // Cache the result
+    positionsCache.set(cacheKey, { data: response, timestamp: Date.now() });
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error fetching positions:", error);
     
@@ -130,10 +137,12 @@ export async function GET(
       { status: 500 }
     );
   } finally {
-    try {
-      await client.end();
-    } catch (e) {
-      // Ignore cleanup errors
+    if (client) {
+      try {
+        client.release();
+      } catch (e) {
+        console.error('Error releasing client back to pool:', e);
+      }
     }
   }
 }

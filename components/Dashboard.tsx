@@ -25,15 +25,15 @@ export function Dashboard({ coin }: DashboardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [isClient, setIsClient] = useState(false)
-  const [currentTimeWindow, setCurrentTimeWindow] = useState<TimeWindow>('1d')
-  
-  // Individual time windows for each chart
-  const [priceTimeWindow, setPriceTimeWindow] = useState<TimeWindow>('1d')
-  const [bidLiquidityTimeWindow, setBidLiquidityTimeWindow] = useState<TimeWindow>('1d')
-  const [askLiquidityTimeWindow, setAskLiquidityTimeWindow] = useState<TimeWindow>('1d')
-  const [fundingTimeWindow, setFundingTimeWindow] = useState<TimeWindow>('1d')
-  const [oiTimeWindow, setOiTimeWindow] = useState<TimeWindow>('1d')
-  const [volumeTimeWindow, setVolumeTimeWindow] = useState<TimeWindow>('1d')
+  const [currentTimeWindow, setCurrentTimeWindow] = useState<TimeWindow>('7d')
+
+  // Individual time windows for each chart (default to 7d for better data visualization)
+  const [priceTimeWindow, setPriceTimeWindow] = useState<TimeWindow>('7d')
+  const [bidLiquidityTimeWindow, setBidLiquidityTimeWindow] = useState<TimeWindow>('7d')
+  const [askLiquidityTimeWindow, setAskLiquidityTimeWindow] = useState<TimeWindow>('7d')
+  const [fundingTimeWindow, setFundingTimeWindow] = useState<TimeWindow>('7d')
+  const [oiTimeWindow, setOiTimeWindow] = useState<TimeWindow>('7d')
+  const [volumeTimeWindow, setVolumeTimeWindow] = useState<TimeWindow>('7d')
   
   // Track which time windows are currently loading
   const [loadingWindows, setLoadingWindows] = useState<Set<TimeWindow>>(new Set())

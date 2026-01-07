@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate:indexes": "tsx scripts/generate-db-indexes.ts > db-indexes-generated.sql && echo 'Generated db-indexes-generated.sql'"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.1.4",
@@ -33,6 +34,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

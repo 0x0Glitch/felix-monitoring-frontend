@@ -1,31 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Client } from 'pg'
+import { getPool } from '@/lib/db'
+import { dataCache } from '@/lib/cache'
 import { MARKET_CONFIG } from '@/lib/config'
 import { getMarketTableNames, normalizeMarketId } from '@/lib/markets'
-
-// Function to create a new client for each request (better for serverless)
-function createClient() {
-  return new Client({
-    connectionString: process.env.NEXT_PUBLIC_DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    },
-    connectionTimeoutMillis: 5000, // 5 seconds
-    statement_timeout: 30000, // 30 seconds
-    query_timeout: 30000, // 30 seconds
-  })
-}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const timeWindow = searchParams.get('timeWindow') || 'all'
   let coin = searchParams.get('coin')
-  
+
   // Default to configured market if no coin specified
   if (!coin) {
     coin = MARKET_CONFIG.defaultMarket
   }
-  
+
   // Normalize coin format: lowercase dex prefix, uppercase market symbol
   if (coin.includes(':')) {
     const parts = coin.split(':')
@@ -34,64 +22,41 @@ export async function GET(request: NextRequest) {
     // For non-DEX markets, keep original case
     coin = coin.toUpperCase()
   }
-  
-  const limit = parseInt(searchParams.get('limit') || '5000') // Default limit
-  const offset = parseInt(searchParams.get('offset') || '0')
-  
-  let client: Client | null = null
-  let retries = 3
-  
-  // Retry logic for connection
-  while (retries > 0) {
-    try {
-      client = createClient()
-      await client.connect()
-      break // Success, exit the retry loop
-    } catch (connError: any) {
-      retries--
-      console.error(`Connection attempt failed, retries remaining: ${retries}`, connError.message)
-      if (client) {
-        try {
-          await client.end()
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-        client = null
-      }
-      if (retries === 0) {
-        console.error('All connection attempts failed')
-        return NextResponse.json({
-          success: false,
-          error: 'Database connection failed after multiple attempts. Please try again later.',
-          details: connError.message
-        }, { status: 503 })
-      }
-      // Wait before retrying (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000))
-    }
-  }
-  
-  if (!client) {
+
+  // Check cache first
+  const cachedData = dataCache.get(timeWindow, coin)
+  if (cachedData) {
+    console.log(`[CACHE HIT] Returning cached data for ${coin} - ${timeWindow}`)
     return NextResponse.json({
-      success: false,
-      error: 'Unable to establish database connection'
-    }, { status: 503 })
+      success: true,
+      data: cachedData.data,
+      count: cachedData.data.length,
+      sampled: cachedData.sampled,
+      cached: true
+    })
   }
-  
+
+  console.log(`[CACHE MISS] Fetching fresh data for ${coin} - ${timeWindow}`)
+
+  const pool = getPool()
+  let client
+
   try {
+    // Get a client from the pool
+    client = await pool.connect()
+
     // Get table name based on the market
     const normalizedCoin = normalizeMarketId(coin)
     const { marketSchema, marketTable } = getMarketTableNames(normalizedCoin)
     const fullTableName = `${marketSchema}.${marketTable}`
-    
+
     console.log(`Using dynamic table for market ${normalizedCoin}: ${fullTableName}`)
-    
+
     // For "all" time window, we'll sample the data to avoid too much data
     const isAllTime = timeWindow === 'all'
-    
+
     // Build the query
     let query: string
-    const conditions = []
     const values: any[] = []
     
     if (isAllTime) {
@@ -436,13 +401,17 @@ export async function GET(request: NextRequest) {
       console.log(`[${timeWindow}] Returning 0 records`)
     }
     
+    // Cache the processed data
+    dataCache.set(timeWindow, coin, processedData, timeWindow !== '1h')
+
     return NextResponse.json({
       success: true,
       data: processedData,
       count: processedData.length,
-      sampled: timeWindow !== '1h' // All except 1h use sampling
+      sampled: timeWindow !== '1h', // All except 1h use sampling
+      cached: false
     })
-    
+
   } catch (error: any) {
     console.error('Database error:', error)
     
@@ -469,11 +438,12 @@ export async function GET(request: NextRequest) {
       details: process.env.NODE_ENV === 'development' ? error : undefined
     }, { status: 500 })
   } finally {
+    // Release client back to the pool (don't end it)
     if (client) {
       try {
-        await client.end()
+        client.release()
       } catch (e) {
-        console.error('Error closing database connection:', e)
+        console.error('Error releasing client back to pool:', e)
       }
     }
   }
