@@ -4,7 +4,7 @@ import { getMarketTableNames, normalizeMarketId } from "@/lib/markets";
 
 // Simple cache for positions data
 const positionsCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 15000; // 15 seconds cache for positions
+const CACHE_TTL = 60000; // 60 seconds cache for positions (balance freshness vs performance)
 
 export async function GET(
   _req: NextRequest,

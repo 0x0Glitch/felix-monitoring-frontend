@@ -99,6 +99,7 @@ export default function Home() {
 
       // Fetch all markets in parallel (not in batches) for maximum speed
       // Connection pooling and caching will handle the load
+      let completedCount = 0;
       const promises = AVAILABLE_MARKETS.map(async (market) => {
         const result = await fetchMarketData(market);
         if (result) {
@@ -108,10 +109,15 @@ export default function Home() {
             [result.marketId]: result.stats
           }));
         }
+        completedCount++;
+        // Mark as not loading after first 3 markets load for better perceived speed
+        if (completedCount === 3) {
+          setLoading(false);
+        }
         return result;
       });
 
-      // Wait for all to complete, then mark as not loading
+      // Wait for all to complete
       await Promise.all(promises);
       setLoading(false);
     };

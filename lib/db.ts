@@ -11,7 +11,7 @@ export function getPool(): Pool {
         rejectUnauthorized: false
       },
       // Connection pool settings optimized for performance
-      max: 20, // Maximum number of clients in the pool
+      max: 30, // Maximum number of clients in the pool
       min: 2, // Minimum number of clients in the pool
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
       connectionTimeoutMillis: 5000, // 5 seconds to establish connection

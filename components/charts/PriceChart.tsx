@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback, memo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { ChevronDown } from 'lucide-react'
 import { formatNumber, formatTimestamp } from '@/lib/utils'
@@ -13,6 +13,24 @@ interface PriceChartProps {
   defaultTimeWindow?: TimeWindow
 }
 
+// Memoized tooltip component for better performance
+const CustomTooltip = memo(({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-[#0a0a0a] p-3 border border-gray-700">
+        <p className="font-mono-data text-sm font-medium mb-2 text-white">{formatTimestamp(label)}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="font-mono-data text-sm" style={{ color: entry.color }}>
+            {entry.name}: ${formatNumber(entry.value)}
+          </p>
+        ))}
+      </div>
+    )
+  }
+  return null
+})
+CustomTooltip.displayName = 'CustomTooltip'
+
 export function PriceChart({ data, onTimeWindowChange, defaultTimeWindow = '1d' }: PriceChartProps) {
   const [timeWindow, setTimeWindow] = useState<TimeWindow>(defaultTimeWindow)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -22,37 +40,22 @@ export function PriceChart({ data, onTimeWindowChange, defaultTimeWindow = '1d' 
     return data || []
   }, [data])
 
-  const timeWindows: { value: TimeWindow; label: string }[] = [
+  const timeWindows: { value: TimeWindow; label: string }[] = useMemo(() => [
     { value: '1h', label: 'Past Hour' },
     { value: '1d', label: 'Past Day' },
     { value: '7d', label: 'Past 7 Days' },
     { value: '30d', label: 'Past 30 Days' },
     { value: 'all', label: 'All Time' },
-  ]
+  ], [])
 
-  const handleTimeChange = (window: TimeWindow) => {
+  const handleTimeChange = useCallback((window: TimeWindow) => {
     setTimeWindow(window)
     setIsDropdownOpen(false)
     // Notify parent component of time window change
     if (onTimeWindowChange) {
       onTimeWindowChange(window)
     }
-  }
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-[#0a0a0a] p-3 border border-gray-700">
-          <p className="font-mono-data text-sm font-medium mb-2 text-white">{formatTimestamp(label)}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="font-mono-data text-sm" style={{ color: entry.color }}>
-              {entry.name}: ${formatNumber(entry.value)}
-            </p>
-          ))}
-        </div>
-      )
-    }
-    return null
-  }
+  }, [onTimeWindowChange])
 
   return (
     <div className="w-full h-full">

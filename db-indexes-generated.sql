@@ -1,6 +1,6 @@
 -- Auto-generated Database Indexes
 -- Generated from markets.ts configuration
--- Generated at: 2026-01-07T09:47:22.229Z
+-- Generated at: 2026-01-07T10:18:12.753Z
 -- Run this script on your PostgreSQL database to create all required indexes
 
 -- ============================================================================
