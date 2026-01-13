@@ -27,8 +27,12 @@ export function FundingRateChart({ data, onTimeWindowChange, defaultTimeWindow =
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   // Use all data since server-side aggregation provides the right granularity
+  // Annualize the funding rate: hourly rate * 24 hours * 365 days
   const filteredData = useMemo(() => {
-    return data || []
+    return (data || []).map((item: any) => ({
+      ...item,
+      funding_rate_pct: item.funding_rate_pct * 24 * 365
+    }))
   }, [data])
 
   const timeWindows: { value: TimeWindow; label: string }[] = [
@@ -70,7 +74,7 @@ export function FundingRateChart({ data, onTimeWindowChange, defaultTimeWindow =
   return (
     <div className="w-full h-full">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Funding Rate</h3>
+        <h3 className="text-lg font-semibold">Funding Rate(Annualized)</h3>
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}

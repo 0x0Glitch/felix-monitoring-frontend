@@ -87,6 +87,18 @@ export const AVAILABLE_MARKETS: Market[] = [
     logo: "silver",
     color: "#76B900"
  },
+ {
+    id: "flx:OIL",
+    name: "OIL",
+    dex: "flx",
+    symbol: "OIL",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_oil_data",
+    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_oil_positions",
+    logo: "oily",
+    color: "#76B900"
+ },
 ];
 
 // Helper function to get market configuration by ID
