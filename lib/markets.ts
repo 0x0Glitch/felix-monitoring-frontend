@@ -1,20 +1,180 @@
-// Market configuration for multi-market monitoring
+// markets.ts
+// Unified multi-market configuration (flx + lit + xyz + hl)
+
 export interface Market {
-  id: string;           // Unique identifier (e.g., "lit:BTC", "xyz:TSLA", "BTC" for hl)
-  name: string;         // Display name (e.g., "TSLA")
-  dex: string;          // DEX prefix (e.g., "lit", "xyz", "hl")
-  symbol: string;       // Market symbol (e.g., "TSLA")
+  id: string; // Unique identifier (e.g., "flx:TSLA", "lit:BTC", "xyz:TSLA", "BTC" for hl)
+  name: string; // Display name (e.g., "TSLA")
+  dex: string; // DEX prefix (e.g., "flx", "lit", "xyz", "hl")
+  symbol: string; // Market symbol (e.g., "TSLA")
   marketSchema: string; // Database schema for market data
-  marketTable: string;  // Database table for market data
+  marketTable: string; // Database table for market data
   userPositionsSchema: string; // Database schema for user positions
-  userPositionsTable: string;  // Database table for user positions
-  logo?: string;        // Optional logo URL or path
-  color?: string;       // Brand color for the market
+  userPositionsTable: string; // Database table for user positions
+  logo?: string; // Optional logo URL or path
+  color?: string; // Brand color for the market
+}
+
+// Helper function to normalize market ID
+// - If dex:symbol => dex lowercased + ":" + symbol uppercased
+// - If raw symbol (hl markets) => symbol uppercased
+export function normalizeMarketId(marketId: string): string {
+  if (marketId.includes(":")) {
+    const parts = marketId.split(":");
+    return parts[0].toLowerCase() + ":" + (parts[1] || "").toUpperCase();
+  }
+  return marketId.toUpperCase();
 }
 
 // Available markets configuration
 // These can be moved to environment variables or fetched from an API
 export const AVAILABLE_MARKETS: Market[] = [
+  // --------------------
+  // FLX
+  // --------------------
+  {
+    id: "flx:TSLA",
+    name: "TSLA",
+    dex: "flx",
+    symbol: "TSLA",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_tsla_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_tsla_positions",
+    logo: "tesla",
+    color: "#E82127",
+  },
+  {
+    id: "flx:CRCL",
+    name: "CRCL",
+    dex: "flx",
+    symbol: "CRCL",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_crcl_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_crcl_positions",
+    logo: "Circle.png",
+    color: "#76B900",
+  },
+  {
+    id: "flx:COIN",
+    name: "COIN",
+    dex: "flx",
+    symbol: "COIN",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_coin_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_coin_positions",
+    logo: "coin",
+    color: "#76B900",
+  },
+  {
+    id: "flx:GOLD",
+    name: "GOLD",
+    dex: "flx",
+    symbol: "GOLD",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_gold_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_gold_positions",
+    logo: "goldy",
+    color: "#76B900",
+  },
+  {
+    id: "flx:XMR",
+    name: "XMR",
+    dex: "flx",
+    symbol: "XMR",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_xmr_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_xmr_positions",
+    logo: "xmr",
+    color: "#76B900",
+  },
+  {
+    id: "flx:SILVER",
+    name: "SILVER",
+    dex: "flx",
+    symbol: "SILVER",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_silver_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_silver_positions",
+    logo: "silver",
+    color: "#76B900",
+  },
+  {
+    id: "flx:OIL",
+    name: "OIL",
+    dex: "flx",
+    symbol: "OIL",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_oil_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_oil_positions",
+    logo: "oily",
+    color: "#76B900",
+  },
+  {
+    id: "flx:COPPER",
+    name: "COPPER",
+    dex: "flx",
+    symbol: "COPPER",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_copper_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_copper_positions",
+    logo: "copper",
+    color: "#76B900",
+  },
+  {
+    id: "flx:NVDA",
+    name: "NVDA",
+    dex: "flx",
+    symbol: "NVDA",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_nvda_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_nvda_positions",
+    logo: "nvidia",
+    color: "#76B900",
+  },
+  {
+    id: "flx:PLATINUM",
+    name: "PLATINUM",
+    dex: "flx",
+    symbol: "PLATINUM",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_platinum_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_platinum_positions",
+    logo: "silver",
+    color: "#76B900",
+  },
+  {
+    id: "flx:PALLADIUM",
+    name: "PALLADIUM",
+    dex: "flx",
+    symbol: "PALLADIUM",
+    marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
+    marketTable: "flx_palladium_data",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "flx_palladium_positions",
+    logo: "palladium",
+    color: "#76B900",
+  },
+
   // --------------------
   // Lighter (lit)
   // --------------------
@@ -25,10 +185,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "HYPE",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "lit_hype_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "lit_hype_positions",
     logo: "hype",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "lit:SOL",
@@ -37,10 +198,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "SOL",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "lit_sol_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "lit_sol_positions",
     logo: "sol",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "lit:BTC",
@@ -49,10 +211,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "BTC",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "lit_btc_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "lit_btc_positions",
     logo: "btc",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "lit:ETH",
@@ -61,10 +224,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "ETH",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "lit_eth_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "lit_eth_positions",
     logo: "eth",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "lit:PAXG",
@@ -73,10 +237,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "PAXG",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "lit_paxg_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "lit_paxg_positions",
     logo: "paxg",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "lit:XAG",
@@ -85,10 +250,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "XAG",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "lit_xag_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "lit_xag_positions",
     logo: "xag",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "lit:XAU",
@@ -97,10 +263,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "XAU",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "lit_xau_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "lit_xau_positions",
     logo: "xau",
-    color: "#76B900"
+    color: "#76B900",
   },
 
   // --------------------
@@ -113,10 +280,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "COIN",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_coin_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_coin_positions",
     logo: "coin",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "xyz:COPPER",
@@ -125,10 +293,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "COPPER",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_copper_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_copper_positions",
     logo: "copper",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "xyz:CRCL",
@@ -137,10 +306,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "CRCL",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_crcl_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_crcl_positions",
     logo: "Circle.png",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "xyz:GOLD",
@@ -149,10 +319,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "GOLD",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_gold_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_gold_positions",
     logo: "goldy",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "xyz:NVDA",
@@ -161,10 +332,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "NVDA",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_nvda_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_nvda_positions",
     logo: "nvidia",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "xyz:PALLADIUM",
@@ -173,10 +345,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "PALLADIUM",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_palladium_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_palladium_positions",
     logo: "palladium",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "xyz:PLATINUM",
@@ -185,10 +358,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "PLATINUM",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_platinum_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_platinum_positions",
     logo: "platinum",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "xyz:SILVER",
@@ -197,10 +371,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "SILVER",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_silver_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_silver_positions",
     logo: "silver",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "xyz:TSLA",
@@ -209,10 +384,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "TSLA",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_tsla_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_tsla_positions",
     logo: "tesla",
-    color: "#E82127"
+    color: "#E82127",
   },
   {
     id: "xyz:XYZ100",
@@ -221,10 +397,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "XYZ100",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "xyz_xyz100_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "xyz_xyz100_positions",
     logo: "xyz100",
-    color: "#76B900"
+    color: "#76B900",
   },
 
   // --------------------
@@ -238,10 +415,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "HYPE",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "hype_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
-    userPositionsTable: "hl_hype_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "hype_positions",
     logo: "hype",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "SOL",
@@ -250,10 +428,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "SOL",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "sol_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
-    userPositionsTable: "hl_sol_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsTable: "sol_positions",
     logo: "sol",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "BTC",
@@ -262,10 +441,11 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "BTC",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "btc_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "hl_btc_positions",
     logo: "btc",
-    color: "#76B900"
+    color: "#76B900",
   },
   {
     id: "ETH",
@@ -274,54 +454,49 @@ export const AVAILABLE_MARKETS: Market[] = [
     symbol: "ETH",
     marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
     marketTable: "eth_data",
-    userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
+    userPositionsSchema:
+      process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     userPositionsTable: "hl_eth_positions",
     logo: "eth",
-    color: "#76B900"
-  }
+    color: "#76B900",
+  },
 ];
 
-// Helper function to get market configuration by ID
+// Helper function to get market configuration by ID (accepts raw or unnormalized ids)
 export function getMarketConfig(marketId: string): Market | undefined {
-  return AVAILABLE_MARKETS.find(m => m.id === marketId);
-}
-
-// Helper function to normalize market ID
-export function normalizeMarketId(marketId: string): string {
-  if (marketId.includes(':')) {
-    const parts = marketId.split(':');
-    return parts[0].toLowerCase() + ':' + (parts[1] || '').toUpperCase();
-  }
-  return marketId.toUpperCase();
+  const normalized = normalizeMarketId(marketId);
+  return AVAILABLE_MARKETS.find((m) => m.id === normalized);
 }
 
 // Helper function to get table names for a market
 export function getMarketTableNames(marketId: string) {
-  const market = getMarketConfig(normalizeMarketId(marketId));
+  const normalized = normalizeMarketId(marketId);
+  const market = getMarketConfig(normalized);
 
   if (!market) {
     // Fallback to default naming convention
-    const normalized = normalizeMarketId(marketId);
 
     // If it's not dex:symbol, treat it as a raw symbol (e.g., hl markets: "BTC")
-    if (!normalized.includes(':')) {
+    if (!normalized.includes(":")) {
       const symbol = normalized.toLowerCase();
       return {
         marketTable: `${symbol}_data`,
         userPositionsTable: `${symbol}_positions`,
         marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
-        userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions"
+        userPositionsSchema:
+          process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
       };
     }
 
-    const [dex, symbol] = normalized.split(':');
+    const [dex, symbol] = normalized.split(":");
     const tablePrefix = `${dex}_${symbol.toLowerCase()}`;
 
     return {
       marketTable: `${tablePrefix}_data_lighter`,
       userPositionsTable: `${tablePrefix}_positions`,
       marketSchema: process.env.NEXT_PUBLIC_MARKET_SCHEMA || "market_data",
-      userPositionsSchema: process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions"
+      userPositionsSchema:
+        process.env.NEXT_PUBLIC_USER_POSITIONS_SCHEMA || "user_positions",
     };
   }
 
@@ -329,39 +504,36 @@ export function getMarketTableNames(marketId: string) {
     marketTable: market.marketTable,
     userPositionsTable: market.userPositionsTable,
     marketSchema: market.marketSchema,
-    userPositionsSchema: market.userPositionsSchema
+    userPositionsSchema: market.userPositionsSchema,
   };
 }
 
 // Get quote currency for a DEX
 export function getQuoteCurrency(dex: string): string {
   const quoteCurrencies: Record<string, string> = {
-    'lit': 'USDC',
-    'xyz': 'USDC',
-    'hl': 'USDC',
+    flx: "USDH",
+    lit: "USDC",
+    xyz: "USDC",
+    hl: "USDC",
   };
-  return quoteCurrencies[dex.toLowerCase()] || 'USDC';
+  return quoteCurrencies[dex.toLowerCase()] || "USDC";
 }
 
-// Get formatted market pair name (e.g., "TSLA-USDC")
+// Get formatted market pair name (e.g., "TSLA-USDH", "BTC-USDC")
 export function getMarketPairName(market: Market): string {
   const quote = getQuoteCurrency(market.dex);
   return `${market.symbol}-${quote}`;
 }
 
-// Get all markets (kept for backward compatibility)
+// Get all markets grouped by DEX (kept for backward compatibility)
 export function getMarketsByCategory() {
-  // Return markets grouped by DEX for backward compatibility
   const grouped: Record<string, Market[]> = {};
 
-  AVAILABLE_MARKETS.forEach(market => {
-    const dex = market.dex || 'other';
-    if (!grouped[dex]) {
-      grouped[dex] = [];
-    }
+  AVAILABLE_MARKETS.forEach((market) => {
+    const dex = market.dex || "other";
+    if (!grouped[dex]) grouped[dex] = [];
     grouped[dex].push(market);
   });
 
   return grouped;
 }
-
