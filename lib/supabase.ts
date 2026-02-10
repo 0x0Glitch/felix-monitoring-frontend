@@ -52,14 +52,16 @@ export interface MarketMetrics {
   funding: number | null
   openinterest: number | null
   dayntlvlm: number | null
-  bid_depth_5bps: number | null
-  ask_depth_5bps: number | null
-  bid_depth_10bps: number | null
-  ask_depth_10bps: number | null
-  bid_depth_50bps: number | null
-  ask_depth_50bps: number | null
-  bid_depth_100bps: number | null
-  ask_depth_100bps: number | null
+  bid_depth_3bps: number | null
+  ask_depth_3bps: number | null
+  bid_depth_7_5bps: number | null
+  ask_depth_7_5bps: number | null
+  bid_depth_15bps: number | null
+  ask_depth_15bps: number | null
+  bid_depth_20bps: number | null
+  ask_depth_20bps: number | null
+  bid_depth_25bps: number | null
+  ask_depth_25bps: number | null
   premium: number | null
   impactpxs_bid: number | null
   impactpxs_ask: number | null

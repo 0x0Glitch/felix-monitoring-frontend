@@ -25,7 +25,6 @@ interface LiquidityChartProps {
 }
 
 export function LiquidityChart({ data, side, onTimeWindowChange, defaultTimeWindow = '1d' }: LiquidityChartProps) {
-  const currentMetric = 'bps' // Always use BPS
   const [timeWindow, setTimeWindow] = useState<TimeWindow>(defaultTimeWindow)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
@@ -51,34 +50,21 @@ export function LiquidityChart({ data, side, onTimeWindowChange, defaultTimeWind
     }
   }
 
-  // Color schemes
+  // Color schemes (5 shades each)
   const colors = {
-    bid: ['#10b981', '#14b8a6', '#06b6d4', '#0ea5e9'], // Vibrant blues/greens for bid
-    ask: ['#f97316', '#ef4444', '#dc2626', '#e11d48']  // Vibrant oranges/reds for ask
+    bid: ['#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#6366f1'], // greens → blues → indigo
+    ask: ['#fbbf24', '#f97316', '#ef4444', '#dc2626', '#e11d48']  // yellow → oranges → reds
   }
 
-  // Data keys based on metric type
-  const getDepthKeys = (metricType: 'bps' | 'pct') => {
-    if (metricType === 'bps') {
-      return {
-        key1: side === 'bid' ? 'bid_depth_5bps' : 'ask_depth_5bps',
-        key2: side === 'bid' ? 'bid_depth_10bps' : 'ask_depth_10bps',
-        key3: side === 'bid' ? 'bid_depth_50bps' : 'ask_depth_50bps',
-        key4: side === 'bid' ? 'bid_depth_100bps' : 'ask_depth_100bps',
-        labels: ['5 bps', '10 bps', '50 bps', '100 bps']
-      }
-    } else {
-      return {
-        key1: side === 'bid' ? 'bid_depth_5pct' : 'ask_depth_5pct',
-        key2: side === 'bid' ? 'bid_depth_10pct' : 'ask_depth_10pct',
-        key3: side === 'bid' ? 'bid_depth_25pct' : 'ask_depth_25pct',
-        key4: null,
-        labels: ['5%', '10%', '25%']
-      }
-    }
-  }
-
-  const { key1, key2, key3, key4, labels } = getDepthKeys(currentMetric)
+  const prefix = side === 'bid' ? 'bid' : 'ask'
+  const depthKeys = [
+    `${prefix}_depth_3bps`,
+    `${prefix}_depth_7_5bps`,
+    `${prefix}_depth_15bps`,
+    `${prefix}_depth_20bps`,
+    `${prefix}_depth_25bps`,
+  ]
+  const depthLabels = ['3 bps', '7.5 bps', '15 bps', '20 bps', '25 bps']
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -153,44 +139,18 @@ export function LiquidityChart({ data, side, onTimeWindowChange, defaultTimeWind
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           
-          <Line
-            type="monotone"
-            dataKey={key1}
-            stroke={colors[side][0]}
-            strokeWidth={2.5}
-            dot={false}
-            name={`Liquidity @ ${labels[0]}`}
-            animationDuration={500}
-          />
-          <Line
-            type="monotone"
-            dataKey={key2}
-            stroke={colors[side][1]}
-            strokeWidth={2.5}
-            dot={false}
-            name={`Liquidity @ ${labels[1]}`}
-            animationDuration={500}
-          />
-          <Line
-            type="monotone"
-            dataKey={key3}
-            stroke={colors[side][2]}
-            strokeWidth={2.5}
-            dot={false}
-            name={`Liquidity @ ${labels[2]}`}
-            animationDuration={500}
-          />
-          {key4 && (
+          {depthKeys.map((key, i) => (
             <Line
+              key={key}
               type="monotone"
-              dataKey={key4}
-              stroke={colors[side][3]}
+              dataKey={key}
+              stroke={colors[side][i]}
               strokeWidth={2.5}
               dot={false}
-              name={`Liquidity @ ${labels[3]}`}
+              name={`Liquidity @ ${depthLabels[i]}`}
               animationDuration={500}
             />
-          )}
+          ))}
           
         </LineChart>
       </ResponsiveContainer>
