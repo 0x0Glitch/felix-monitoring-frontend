@@ -50,21 +50,29 @@ export function LiquidityChart({ data, side, onTimeWindowChange, defaultTimeWind
     }
   }
 
-  // Color schemes (5 shades each)
-  const colors = {
-    bid: ['#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#6366f1'], // greens → blues → indigo
-    ask: ['#fbbf24', '#f97316', '#ef4444', '#dc2626', '#e11d48']  // yellow → oranges → reds
-  }
-
   const prefix = side === 'bid' ? 'bid' : 'ask'
-  const depthKeys = [
-    `${prefix}_depth_3bps`,
-    `${prefix}_depth_7_5bps`,
-    `${prefix}_depth_15bps`,
-    `${prefix}_depth_20bps`,
-    `${prefix}_depth_25bps`,
+
+  // All possible bps levels (old + new), ordered ascending
+  // Each has a fixed color per side so colors stay consistent regardless of which subset is present
+  const allDepthLevels = [
+    { suffix: '3bps',    label: '3 bps',    bid: '#10b981', ask: '#fbbf24' },
+    { suffix: '5bps',    label: '5 bps',    bid: '#14b8a6', ask: '#f97316' },
+    { suffix: '7_5bps',  label: '7.5 bps',  bid: '#06b6d4', ask: '#ef4444' },
+    { suffix: '10bps',   label: '10 bps',   bid: '#0ea5e9', ask: '#dc2626' },
+    { suffix: '15bps',   label: '15 bps',   bid: '#6366f1', ask: '#e11d48' },
+    { suffix: '20bps',   label: '20 bps',   bid: '#8b5cf6', ask: '#be185d' },
+    { suffix: '25bps',   label: '25 bps',   bid: '#a855f7', ask: '#9d174d' },
+    { suffix: '50bps',   label: '50 bps',   bid: '#7c3aed', ask: '#831843' },
+    { suffix: '100bps',  label: '100 bps',  bid: '#5b21b6', ask: '#500724' },
   ]
-  const depthLabels = ['3 bps', '7.5 bps', '15 bps', '20 bps', '25 bps']
+
+  // Only show levels that actually have data in this dataset
+  const activeLevels = useMemo(() => {
+    if (!filteredData.length) return []
+    return allDepthLevels.filter(level =>
+      filteredData.some((d: any) => d[`${prefix}_depth_${level.suffix}`] != null)
+    )
+  }, [filteredData, prefix])
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -139,15 +147,15 @@ export function LiquidityChart({ data, side, onTimeWindowChange, defaultTimeWind
           <Tooltip content={<CustomTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           
-          {depthKeys.map((key, i) => (
+          {activeLevels.map((level: typeof allDepthLevels[0]) => (
             <Line
-              key={key}
+              key={level.suffix}
               type="monotone"
-              dataKey={key}
-              stroke={colors[side][i]}
+              dataKey={`${prefix}_depth_${level.suffix}`}
+              stroke={level[side]}
               strokeWidth={2.5}
               dot={false}
-              name={`Liquidity @ ${depthLabels[i]}`}
+              name={`Liquidity @ ${level.label}`}
               animationDuration={500}
             />
           ))}

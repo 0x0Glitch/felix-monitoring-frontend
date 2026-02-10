@@ -49,6 +49,30 @@ export async function GET(request: NextRequest) {
 
     console.log(`Using dynamic table for market ${normalizedCoin}: ${fullTableName}`)
 
+    // Detect available depth columns — schemas vary across markets
+    const depthColsResult = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = $1 AND table_name = $2
+      AND column_name ~ '^(bid|ask)_depth_'
+      ORDER BY column_name
+    `, [marketSchema, marketTable])
+
+    const availableDepthCols: string[] = depthColsResult.rows.map((r: any) => r.column_name)
+    const bidDepthCols = availableDepthCols.filter((c: string) => c.startsWith('bid_'))
+
+    const depthSelectFragment = availableDepthCols.length > 0
+      ? availableDepthCols.map(col => `          AVG(${col}) as ${col}`).join(',\n') + ','
+      : ''
+
+    const totalDepthFragment = bidDepthCols.length > 0
+      ? bidDepthCols.map(col => {
+          const askCol = col.replace('bid_', 'ask_')
+          const totalKey = `total_${col.replace('bid_depth_', '')}`
+          return `          AVG(${col} + ${askCol}) as ${totalKey}`
+        }).join(',\n') + ','
+      : ''
+
     const isAllTime = timeWindow === 'all'
 
     let query: string
@@ -76,21 +100,8 @@ export async function GET(request: NextRequest) {
           AVG(spread) as spread,
           MAX(dayntlvlm) as volume_24h,
           AVG(premium) as premium,
-          AVG(bid_depth_3bps) as bid_depth_3bps,
-          AVG(ask_depth_3bps) as ask_depth_3bps,
-          AVG(bid_depth_7_5bps) as bid_depth_7_5bps,
-          AVG(ask_depth_7_5bps) as ask_depth_7_5bps,
-          AVG(bid_depth_15bps) as bid_depth_15bps,
-          AVG(ask_depth_15bps) as ask_depth_15bps,
-          AVG(bid_depth_20bps) as bid_depth_20bps,
-          AVG(ask_depth_20bps) as ask_depth_20bps,
-          AVG(bid_depth_25bps) as bid_depth_25bps,
-          AVG(ask_depth_25bps) as ask_depth_25bps,
-          AVG(bid_depth_3bps + ask_depth_3bps) as total_depth_3bps,
-          AVG(bid_depth_7_5bps + ask_depth_7_5bps) as total_depth_7_5bps,
-          AVG(bid_depth_15bps + ask_depth_15bps) as total_depth_15bps,
-          AVG(bid_depth_20bps + ask_depth_20bps) as total_depth_20bps,
-          AVG(bid_depth_25bps + ask_depth_25bps) as total_depth_25bps,
+          ${depthSelectFragment}
+          ${totalDepthFragment}
           MIN(coin) as coin
         FROM ${fullTableName}
         WHERE coin = $1 AND timestamp >= $2
@@ -119,21 +130,8 @@ export async function GET(request: NextRequest) {
           AVG(spread) as spread,
           MAX(dayntlvlm) as volume_24h,
           AVG(premium) as premium,
-          AVG(bid_depth_3bps) as bid_depth_3bps,
-          AVG(ask_depth_3bps) as ask_depth_3bps,
-          AVG(bid_depth_7_5bps) as bid_depth_7_5bps,
-          AVG(ask_depth_7_5bps) as ask_depth_7_5bps,
-          AVG(bid_depth_15bps) as bid_depth_15bps,
-          AVG(ask_depth_15bps) as ask_depth_15bps,
-          AVG(bid_depth_20bps) as bid_depth_20bps,
-          AVG(ask_depth_20bps) as ask_depth_20bps,
-          AVG(bid_depth_25bps) as bid_depth_25bps,
-          AVG(ask_depth_25bps) as ask_depth_25bps,
-          AVG(bid_depth_3bps + ask_depth_3bps) as total_depth_3bps,
-          AVG(bid_depth_7_5bps + ask_depth_7_5bps) as total_depth_7_5bps,
-          AVG(bid_depth_15bps + ask_depth_15bps) as total_depth_15bps,
-          AVG(bid_depth_20bps + ask_depth_20bps) as total_depth_20bps,
-          AVG(bid_depth_25bps + ask_depth_25bps) as total_depth_25bps,
+          ${depthSelectFragment}
+          ${totalDepthFragment}
           MIN(coin) as coin
         FROM ${fullTableName}
         WHERE coin = $1 AND timestamp >= $2
@@ -162,21 +160,8 @@ export async function GET(request: NextRequest) {
           AVG(spread) as spread,
           MAX(dayntlvlm) as volume_24h,
           AVG(premium) as premium,
-          AVG(bid_depth_3bps) as bid_depth_3bps,
-          AVG(ask_depth_3bps) as ask_depth_3bps,
-          AVG(bid_depth_7_5bps) as bid_depth_7_5bps,
-          AVG(ask_depth_7_5bps) as ask_depth_7_5bps,
-          AVG(bid_depth_15bps) as bid_depth_15bps,
-          AVG(ask_depth_15bps) as ask_depth_15bps,
-          AVG(bid_depth_20bps) as bid_depth_20bps,
-          AVG(ask_depth_20bps) as ask_depth_20bps,
-          AVG(bid_depth_25bps) as bid_depth_25bps,
-          AVG(ask_depth_25bps) as ask_depth_25bps,
-          AVG(bid_depth_3bps + ask_depth_3bps) as total_depth_3bps,
-          AVG(bid_depth_7_5bps + ask_depth_7_5bps) as total_depth_7_5bps,
-          AVG(bid_depth_15bps + ask_depth_15bps) as total_depth_15bps,
-          AVG(bid_depth_20bps + ask_depth_20bps) as total_depth_20bps,
-          AVG(bid_depth_25bps + ask_depth_25bps) as total_depth_25bps,
+          ${depthSelectFragment}
+          ${totalDepthFragment}
           MIN(coin) as coin
         FROM ${fullTableName}
         WHERE coin = $1 AND timestamp >= $2
@@ -205,21 +190,8 @@ export async function GET(request: NextRequest) {
           AVG(spread) as spread,
           MAX(dayntlvlm) as volume_24h,
           AVG(premium) as premium,
-          AVG(bid_depth_3bps) as bid_depth_3bps,
-          AVG(ask_depth_3bps) as ask_depth_3bps,
-          AVG(bid_depth_7_5bps) as bid_depth_7_5bps,
-          AVG(ask_depth_7_5bps) as ask_depth_7_5bps,
-          AVG(bid_depth_15bps) as bid_depth_15bps,
-          AVG(ask_depth_15bps) as ask_depth_15bps,
-          AVG(bid_depth_20bps) as bid_depth_20bps,
-          AVG(ask_depth_20bps) as ask_depth_20bps,
-          AVG(bid_depth_25bps) as bid_depth_25bps,
-          AVG(ask_depth_25bps) as ask_depth_25bps,
-          AVG(bid_depth_3bps + ask_depth_3bps) as total_depth_3bps,
-          AVG(bid_depth_7_5bps + ask_depth_7_5bps) as total_depth_7_5bps,
-          AVG(bid_depth_15bps + ask_depth_15bps) as total_depth_15bps,
-          AVG(bid_depth_20bps + ask_depth_20bps) as total_depth_20bps,
-          AVG(bid_depth_25bps + ask_depth_25bps) as total_depth_25bps,
+          ${depthSelectFragment}
+          ${totalDepthFragment}
           MIN(coin) as coin
         FROM ${fullTableName}
         WHERE coin = $1 AND timestamp >= $2
@@ -249,21 +221,8 @@ export async function GET(request: NextRequest) {
           AVG(spread) as spread,
           MAX(dayntlvlm) as volume_24h,
           AVG(premium) as premium,
-          AVG(bid_depth_3bps) as bid_depth_3bps,
-          AVG(ask_depth_3bps) as ask_depth_3bps,
-          AVG(bid_depth_7_5bps) as bid_depth_7_5bps,
-          AVG(ask_depth_7_5bps) as ask_depth_7_5bps,
-          AVG(bid_depth_15bps) as bid_depth_15bps,
-          AVG(ask_depth_15bps) as ask_depth_15bps,
-          AVG(bid_depth_20bps) as bid_depth_20bps,
-          AVG(ask_depth_20bps) as ask_depth_20bps,
-          AVG(bid_depth_25bps) as bid_depth_25bps,
-          AVG(ask_depth_25bps) as ask_depth_25bps,
-          AVG(bid_depth_3bps + ask_depth_3bps) as total_depth_3bps,
-          AVG(bid_depth_7_5bps + ask_depth_7_5bps) as total_depth_7_5bps,
-          AVG(bid_depth_15bps + ask_depth_15bps) as total_depth_15bps,
-          AVG(bid_depth_20bps + ask_depth_20bps) as total_depth_20bps,
-          AVG(bid_depth_25bps + ask_depth_25bps) as total_depth_25bps,
+          ${depthSelectFragment}
+          ${totalDepthFragment}
           MIN(coin) as coin
         FROM ${fullTableName}
         WHERE coin = $1 AND timestamp >= $2
@@ -298,21 +257,15 @@ export async function GET(request: NextRequest) {
       funding_rate_pct: row.funding_rate_pct ? parseFloat(row.funding_rate_pct) * 100 : null,
       open_interest: row.open_interest ? parseFloat(row.open_interest) : null,
       volume_24h: row.volume_24h ? parseFloat(row.volume_24h) : null,
-      bid_depth_3bps: row.bid_depth_3bps ? parseFloat(row.bid_depth_3bps) : null,
-      ask_depth_3bps: row.ask_depth_3bps ? parseFloat(row.ask_depth_3bps) : null,
-      bid_depth_7_5bps: row.bid_depth_7_5bps ? parseFloat(row.bid_depth_7_5bps) : null,
-      ask_depth_7_5bps: row.ask_depth_7_5bps ? parseFloat(row.ask_depth_7_5bps) : null,
-      bid_depth_15bps: row.bid_depth_15bps ? parseFloat(row.bid_depth_15bps) : null,
-      ask_depth_15bps: row.ask_depth_15bps ? parseFloat(row.ask_depth_15bps) : null,
-      bid_depth_20bps: row.bid_depth_20bps ? parseFloat(row.bid_depth_20bps) : null,
-      ask_depth_20bps: row.ask_depth_20bps ? parseFloat(row.ask_depth_20bps) : null,
-      bid_depth_25bps: row.bid_depth_25bps ? parseFloat(row.bid_depth_25bps) : null,
-      ask_depth_25bps: row.ask_depth_25bps ? parseFloat(row.ask_depth_25bps) : null,
-      total_depth_3bps: row.total_depth_3bps ? parseFloat(row.total_depth_3bps) : null,
-      total_depth_7_5bps: row.total_depth_7_5bps ? parseFloat(row.total_depth_7_5bps) : null,
-      total_depth_15bps: row.total_depth_15bps ? parseFloat(row.total_depth_15bps) : null,
-      total_depth_20bps: row.total_depth_20bps ? parseFloat(row.total_depth_20bps) : null,
-      total_depth_25bps: row.total_depth_25bps ? parseFloat(row.total_depth_25bps) : null,
+      ...availableDepthCols.reduce((acc: any, col: string) => {
+        acc[col] = row[col] ? parseFloat(row[col]) : null
+        return acc
+      }, {}),
+      ...bidDepthCols.reduce((acc: any, col: string) => {
+        const totalKey = `total_${col.replace('bid_depth_', '')}`
+        acc[totalKey] = row[totalKey] ? parseFloat(row[totalKey]) : null
+        return acc
+      }, {}),
       meanImpactPrice: row.meanimpactprice ? parseFloat(row.meanimpactprice) : null,
       impact_px_bid: row.impact_px_bid ? parseFloat(row.impact_px_bid) : null,
       impact_px_ask: row.impact_px_ask ? parseFloat(row.impact_px_ask) : null,
@@ -332,7 +285,8 @@ export async function GET(request: NextRequest) {
       data: processedData,
       count: processedData.length,
       sampled: timeWindow !== '1h',
-      cached: false
+      cached: false,
+      depthColumns: availableDepthCols
     })
 
   } catch (error: any) {
